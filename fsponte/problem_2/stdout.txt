@@ -1,0 +1,8 @@
+alpha = 1.4
+beta = 0.3
+gamma = 2.1
+theta = 0.6
+
+x_0 = 1
+y_0 = -1
+
