@@ -24,7 +24,7 @@ sigma_r = 0.05
 
 
 def V(r):
-    return 4 * eps * ((sigma / r)**12 - (sigma / r)**6) + 1/r**2
+    return 4 * eps * ((sigma / r)**12 - (sigma / r)**6)
 
 
 def hamiltonian():
