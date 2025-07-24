@@ -1,0 +1,17 @@
+# Compiler and flags
+CXX = g++
+CXXFLAGS =
+EIGEN_INCLUDE = -I/usr/local/include/eigen3
+ROOT_FLAGS = $(shell root-config --cflags --libs)
+
+# Default source (can be overridden via command line)
+SRC ?= chebyshev_schro3.cpp
+TARGET ?= main
+
+all: $(TARGET)
+
+$(TARGET): $(SRC)
+	$(CXX) $(CXXFLAGS) $(EIGEN_INCLUDE) $(ROOT_FLAGS) $^ -o $@
+
+clean:
+	
