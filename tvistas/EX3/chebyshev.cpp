@@ -1,11 +1,14 @@
 #include <Eigen/Dense>
+#include <Eigen/Sparse>
 #include <cmath>
 #include <complex>
 #include <functional>
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 using Complex = std::complex<double>;
+using SparseMatrix = Eigen::SparseMatrix<double>;
 using Eigen::MatrixXd;
 using Eigen::VectorXcd;
 
@@ -25,7 +28,7 @@ private:
   std::function<double(double)> Potential;
   std::vector<double> chebyshevCoeff;
 
-  MatrixXd Hamiltonian;
+  SparseMatrix Hamiltonian;
   VectorXcd currentSolution;
 
   std::vector<double> positionExpValues;
@@ -37,21 +40,39 @@ private:
     return r * std::cyl_bessel_j(n, a);
   }
 
+  
   void BuildHamiltonian() {
-    Hamiltonian = MatrixXd::Zero(numStepsX, numStepsX);
-    double kineticTerm = -hbar*hbar/(2*dx*dx);
+    std::vector<Eigen::Triplet<double>> triplets;
+    double kineticCoeff = -hbar * hbar / (2.0 * dx * dx);
 
-    Hamiltonian(0,0) = 1;
-    Hamiltonian(numStepsX-1, numStepsX-1) = 1;
+    for (int i = 0; i < numStepsX; ++i) {
+      double x = xmin + i * dx;
+      double Vx = Potential(x);
 
-    for (int i = 1; i < numStepsX - 1; i++) {
-      Hamiltonian(i, i) = 2*kineticTerm + Potential(xmin + i*dx);
-      Hamiltonian(i, i-1) = -1*kineticTerm;
-      Hamiltonian(i, i+1) = -1*kineticTerm;
+      if (i == 0) {
+        // Left boundary: one-sided second derivative
+        triplets.emplace_back(0, 0, kineticCoeff * 2.0 + Vx);
+        triplets.emplace_back(0, 1, kineticCoeff * -5.0);
+        triplets.emplace_back(0, 2, kineticCoeff * 4.0);
+        triplets.emplace_back(0, 3, kineticCoeff * -1.0);
+      } else if (i == numStepsX - 1) {
+        // Right boundary: one-sided second derivative
+        triplets.emplace_back(i, i, kineticCoeff * 2.0 + Vx);
+        triplets.emplace_back(i, i - 1, kineticCoeff * -5.0);
+        triplets.emplace_back(i, i - 2, kineticCoeff * 4.0);
+        triplets.emplace_back(i, i - 3, kineticCoeff * -1.0);
+      } else {
+        // Interior: standard 3-point stencil
+        triplets.emplace_back(i, i, kineticCoeff * -2.0 + Vx);
+        triplets.emplace_back(i, i - 1, kineticCoeff);
+        triplets.emplace_back(i, i + 1, kineticCoeff);
+      }
     }
 
-   std::cout << Hamiltonian << std::endl;
+    Hamiltonian.resize(numStepsX, numStepsX);
+    Hamiltonian.setFromTriplets(triplets.begin(), triplets.end());
   }
+
    
   double CalculateEmin() {
     double result = Potential(xmin);
@@ -76,10 +97,12 @@ private:
   }
 
   void NormalizeHamiltonian() {
+    SparseMatrix I(numStepsX, numStepsX);
+    I.setIdentity();
     double Emin = CalculateEmin();
     double Emax = CalculateEmax();
     double dE = Emax-Emin;
-    Hamiltonian = 2*(Hamiltonian - (dE/2 + Emin)*MatrixXd::Identity(numStepsX,numStepsX))/dE;
+    Hamiltonian = 2*(Hamiltonian - (dE/2 + Emin)*I)/dE;
   }
 
   void Normalize() {
@@ -163,20 +186,27 @@ public:
       if (i % 100 == 0) {
         std::cout << "Progress: " << i * dt << " / " << tmax << std::endl;
       }
-
     }
   }
 
   void PrintResults() {
-    for (int t = 0; t < numStepsT; t+=30) {
+    for (int t = 0; t < numStepsT; t+=10) {
       std::cout << positionExpValues[t] << std::endl; 
     }
+  }
+
+  void SaveResults(const std::string& filename) {
+    std::ofstream outfile(filename);
+    for (int t = 0; t < numStepsT; ++t) {
+      outfile << t * dt << " " << positionExpValues[t] << std::endl;
+    } 
+    outfile.close();
   }
 };
 
 double LennardJonesPotential(double x) {
-  double sigma = 2.1;
-  double epsilon = 4.643;
+  double sigma = 2.099518748076819;
+  double epsilon = 4.642973059984742;
 
   if (x < 1e-10)
     x = 1e-10; // Avoid division by zero
@@ -185,31 +215,38 @@ double LennardJonesPotential(double x) {
 
 }
 
-Complex GaussianPulse(double x) {
-  double x0 = 2.4; 
-  double k = -1.05;
-  double amplitude = 1;
-  double sigma = 0.3;
+double HOPotential(double x) {
+  double w2 = 400;
+  return 0.5 * w2 * x * x;
+}
 
-  double real_part = amplitude * std::exp(-std::pow(x - x0, 2) / (2 * sigma * sigma));
+Complex GaussianPulse(double x) {
+  double x0 = 2.55;
+  double k = 0;
+  double amplitude = pow(1/M_PI, 0.25);
+  double sigma = 1;
+
+  double real_part = amplitude * std::exp(-std::pow(x - x0, 2)*20 / (2 * sigma * sigma));
   Complex phase = std::exp(Complex(0, k * x));  
+
   return real_part * phase;
   
 }
 
 int main (int argc, char *argv[]) {
-  double dx = 0.1; double dt = 0.01;
-  double tmin = 0; double tmax = 30;
-  double xmin = 1; double xmax = 7;
+  double dx = 0.005; double dt = 0.01;
+  double tmin = 0; double tmax = 10;
+  double xmin = 1.5; double xmax = 6.5;
   double hbar = 1;
 
   SchrodingerSolver solver(dx, dt, tmin, tmax, xmin, xmax, hbar, LennardJonesPotential);
 
   solver.SetInitialState(GaussianPulse);
 
-  solver.SolveSystem(30);
-
-  solver.PrintResults();
+  solver.SolveSystem(50); 
+  
+  solver.SaveResults("data.txt");
+  //solver.PrintResults();
   
   return 0;
 }
