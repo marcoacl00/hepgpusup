@@ -11,7 +11,7 @@ int main()
 	auto table = flines_to_table(file_lines); // Convert file lines to table of values
 
 	set_t radius, potential, fit, error;
-	params_t params = {0, 0};
+	params_t params;
 
 	// Create dataset
 	{
@@ -25,9 +25,27 @@ int main()
 
 	write_dat("dataset.dat", radius, potential, error); // Write dataset file
 
+	// Initial parameter values
+	{
+		const unsigned long DIM = radius.size();
+		params = params_t{potential[0], radius[0]};
+
+		for (unsigned long i = 1; i < DIM; ++i)
+		{
+			if (params.dept <= potential[i])
+				continue;
+
+			params = params_t{potential[i], radius[i]};
+		}
+
+		params.dept *= -1;
+	}
+
 	// Calculate parameters
 	{
-		type_t coeff; // Coefficient of determination (R squared)
+		type_t
+			cost, // Cost function
+			coeff; // Coefficient of determination (R squared)
 		set_t fit_der_dept, fit_der_zero;
 		params_t params_step;
 
@@ -46,20 +64,11 @@ int main()
 			}
 
 			coeff = coeff_det(potential, fit);
-			std::cout << "R^2 = " << coeff << '\n';
+			cost = cost_fn(potential, fit);
 			
-			if (coeff <= 0 || coeff > 1) // Invalid coefficient
-			{
-				params = params_t
-				{
-					drand48(1, 10),
-					drand48(1, 5)
-				};
-
-				std::cout << std::endl;
-
-				continue;
-			}
+			std::cout
+				<< "R^2 = " << coeff << '\n'
+				<< "Cost = " << cost << '\n';
 
 			if (coeff >= 0.98) // Exit condition
 			{
@@ -80,15 +89,34 @@ int main()
 				}
 			}
 
-			params_step = coeff_det_grad(potential, fit, fit_der_dept, fit_der_zero);
+			params_step = cost_fn_grad(potential, fit, fit_der_dept, fit_der_zero);
 			params_step /= params_step.norm();
+
+			if (params_step != params_step) // Check for nan
+			{
+				std::cout
+					<< "nan detected\n"
+					<< std::endl;
+				
+				params = params_t
+				{
+					drand48(1, 10),
+					drand48(1, 5)
+				};
+
+				continue;
+			}
+
+			params_step *= 1E-2; // Learning rate
 			
 			std::cout
 				<< "params_step = ("
-				<< params_step.dept << ", " << params_step.zero << ")\n"
-				<< std::endl;
+				<< params_step.dept << ", "	<< params_step.zero
+				<< ")\n";
 
 			params -= params_step;
+			
+			std::cout << std::endl;
 		}
 	}
 
