@@ -15,3 +15,8 @@ type_t lj_der_zero(const params_t params, const type_t radius)
 {
 	return 4 * params.dept * ((12 * std::pow(params.zero, 11) / std::pow(radius, 12)) - (6 * std::pow(params.zero, 5) / std::pow(radius, 6)));
 }
+
+type_t harmonic_oscillator(const type_t x, const type_t mass, const type_t angular_velocity)
+{
+	return 0.5 * mass * angular_velocity * angular_velocity * x * x;
+}
