@@ -45,7 +45,7 @@ params_t coeff_det_grad(const set_t dataset, const set_t fit, const set_t fit_de
 {
 	const unsigned long DIM = dataset.size();
 
-	if (DIM != fit.size())
+	if (DIM != fit.size() || DIM != fit_der_dept.size() || DIM != fit_der_zero.size())
 		throw "Sets with different dimensions";
 	
 	type_t mean = 0;
