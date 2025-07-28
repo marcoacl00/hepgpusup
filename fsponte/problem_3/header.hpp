@@ -21,13 +21,24 @@ struct params_t
 
 	type_t norm(void)
 	{
-		return this->dept * this->dept + this->zero * this->zero;
+		return std::sqrt(this->dept * this->dept + this->zero * this->zero);
+	}
+
+	bool operator != (const params_t p)
+	{
+		return (this->dept != p.dept || this->zero != p.zero) ? true : false;
 	}
 
 	void operator -= (const params_t p)
 	{
 		this->dept -= p.dept;
 		this->zero -= p.zero;
+	}
+
+	void operator *= (const type_t scalar)
+	{
+		this->dept *= scalar;
+		this->zero *= scalar;
 	}
 
 	void operator /= (const type_t scalar)
