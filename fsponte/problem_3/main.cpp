@@ -52,7 +52,7 @@ int main()
 		for (unsigned long i = 1; i <= 1E3; ++i)
 		{
 			std::cout
-				<< "Iteration: " << i << '\n'
+				<< '\t' << "Iteration: " << i << '\n'
 				<< "params = (" << params.dept << ", " << params.zero << ")\n";
 
 			// Calculate the fit
