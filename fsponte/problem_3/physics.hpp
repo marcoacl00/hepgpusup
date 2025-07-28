@@ -1,5 +1,5 @@
-#ifndef _LJ_POTENTIAL_HPP_
-#define _LJ_POTENTIAL_HPP_
+#ifndef _PHYSICS_HPP_
+#define _PHYSICS_HPP_
 
 // Dependencies
 #include "header.hpp"
@@ -28,4 +28,4 @@ type_t lj_der_dept(params_t, type_t);
 */
 type_t lj_der_zero(params_t, type_t);
 
-#endif // _LJ_POTENTIAL_HPP_
+#endif // _PHYSICS_HPP_

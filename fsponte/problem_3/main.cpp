@@ -3,7 +3,7 @@
 #include "header.hpp"
 #include "stat.hpp"
 #include "file_manager.hpp"
-#include "lj_potential.hpp"
+#include "physics.hpp"
 
 int main()
 {
@@ -21,9 +21,9 @@ int main()
 			error.push_back(row[1]);
 			potential.push_back(row[2]);
 		}
-	}
 
-	write_dat("dataset.dat", radius, potential, error); // Write dataset file
+		write_dat("dataset.dat", radius, potential, error); // Write dataset file
+	}
 
 	// Initial parameter values
 	{
@@ -118,9 +118,9 @@ int main()
 			
 			std::cout << std::endl;
 		}
-	}
 
-	write_dat("fit.dat", radius, fit, error); // Write fit file
+		write_dat("fit.dat", radius, fit); // Write fit file
+	}
 
 	// Print information
 	{

@@ -1,5 +1,5 @@
 // Header file
-#include "lj_potential.hpp"
+#include "physics.hpp"
 
 type_t lj_potential(const params_t params, const type_t radius)
 {
