@@ -51,6 +51,31 @@ table_t flines_to_table(const file_lines_t file_lines) noexcept(true)
 	return table;
 }
 
+void write_dat(const std::string file_name, const set_t x, const set_t y) noexcept(false)
+{
+	std::ofstream file(file_name);
+
+	if (!file.is_open())
+		throw "Output file not open";
+
+	if (!file.good())
+		throw "Output file not good";
+
+	const unsigned long DIM = x.size();
+
+	if (DIM != y.size())
+		throw "Different set dimensions";
+
+	for (unsigned long i = 0; i < DIM; ++i)
+	{
+		file
+			<< x[i] << ' '
+			<< y[i] << '\n';
+	}
+
+	file.close();
+}
+
 void write_dat(const std::string file_name, const set_t x, const set_t y, const set_t error) noexcept(false)
 {
 	std::ofstream file(file_name);

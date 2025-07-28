@@ -25,6 +25,17 @@ table_t flines_to_table(const file_lines_t) noexcept(true);
  * @param f_nam File name
  * @param x X values
  * @param y Y values
+ * @throw Output file not open
+ * @throw Output file not good
+ * @throw Different set dimensions
+*/
+void write_dat(const std::string, const set_t, const set_t) noexcept(false);
+
+/**
+ * @brief Write dataset
+ * @param f_nam File name
+ * @param x X values
+ * @param y Y values
  * @param er Error values
  * @throw Output file not open
  * @throw Output file not good
