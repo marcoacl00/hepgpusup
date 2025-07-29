@@ -30,11 +30,12 @@ type_t lj_der_zero(params_t, type_t);
 
 /**
  * @brief Harmonic oscillator
- * @param x Position
- * @param m Mass
- * @param w Angular velocity
- * @return Potential
+ * @param p Parameters
+ * @param r Radius
+ * @param r_m Radius of minimum
+ * @param k Spring constant
+ * @return Harmonic aproximation
 */
-type_t harmonic_oscillator(type_t, type_t, type_t);
+type_t harmonic_oscillator(params_t, type_t, type_t, type_t);
 
 #endif // _PHYSICS_HPP_

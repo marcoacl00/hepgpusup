@@ -11,7 +11,7 @@ int main()
 	auto table = flines_to_table(file_lines); // Convert file lines to table of values
 
 	set_t radius, potential, fit, error;
-	params_t params;
+	params_t params, params_min;
 
 	// Create dataset
 	{
@@ -25,20 +25,20 @@ int main()
 		write_dat("dataset.dat", radius, potential, error); // Write dataset file
 	}
 
-	// Initial parameter values
+	// Minimum of the dataset
 	{
 		const unsigned long DIM = radius.size();
-		params = params_t{potential[0], radius[0]};
+		params_min = params_t{potential[0], radius[0]};
 
 		for (unsigned long i = 1; i < DIM; ++i)
 		{
-			if (params.dept <= potential[i])
+			if (params_min.dept <= potential[i])
 				continue;
 
-			params = params_t{potential[i], radius[i]};
+			params_min = params_t{potential[i], radius[i]};
 		}
 
-		params.dept *= -1;
+		params_min.dept *= -1;
 	}
 
 	// Calculate parameters
@@ -48,6 +48,8 @@ int main()
 			coeff; // Coefficient of determination (R squared)
 		set_t fit_der_dept, fit_der_zero;
 		params_t params_step;
+
+		params = params_min; // Starting point
 
 		for (unsigned long i = 1; i <= 1E3; ++i)
 		{
@@ -120,6 +122,17 @@ int main()
 		}
 
 		write_dat("fit.dat", radius, fit); // Write fit file
+	}
+
+	// Harmonic oscillator
+	{
+		type_t k = 20; // Spring constant
+		set_t ho;
+
+		for (auto r : radius)
+			ho.push_back(harmonic_oscillator(params, r, params_min.zero, k));
+
+		write_dat("ho.dat", radius, ho); // Write ho file
 	}
 
 	// Print information

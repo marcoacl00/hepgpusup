@@ -12,4 +12,5 @@ set yrange [-6 : 10]
 
 plot \
 	"dataset.dat" using 1:2:3 with yerrorbars title "Dataset" pt 7, \
-	"fit.dat" title "Fit" with lines lw 2
+	"fit.dat" title "Fit" with lines lw 2, \
+	"ho.dat" title "Harmonic oscillator" with lines lw 2
