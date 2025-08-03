@@ -71,4 +71,20 @@ matrix<type_t, N_LIN, _N_COL> matrix<type_t, N_LIN, N_COL>::operator * (matrix<t
 	return ret;
 }
 
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+vector<type_t, N_LIN> matrix<type_t, N_LIN, N_COL>::operator * (vector<type_t, N_COL> vec)
+{
+	vector<type_t, N_LIN> ret;
+
+	for (unsigned long i = 0; i < N_LIN; ++i)
+	{
+		ret[i] = 0;
+
+		for (unsigned long j = 0; j < N_COL; ++j)
+			ret[i] += this->_data[i][j] * vec[j];
+	}
+
+	return ret;
+}
+
 #endif // _MATRIX_TPP_

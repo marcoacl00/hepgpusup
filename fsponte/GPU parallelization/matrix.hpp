@@ -71,6 +71,13 @@ public:
 	*/
 	template <unsigned long _N_COL>
 	matrix<type_t, N_LIN, _N_COL> operator * (matrix<type_t, N_COL, _N_COL>);
+
+	/**
+	 * @brief Multiplication operator
+	 * @param vec Vector
+	 * @return Transformed vector
+	*/
+	vector<type_t, N_LIN> operator * (vector<type_t, N_COL>);
 };
 
 // Template file
