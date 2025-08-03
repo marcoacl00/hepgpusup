@@ -48,6 +48,6 @@ struct params_t
 	}
 };
 
-constexpr const char csv_file_path[] = "../../problems/lennard_jones.csv"; // File path
+constexpr const char csv_file_path[] = "../../../problems/lennard_jones.csv"; // File path
 
 #endif // _HEADER_HPP_
