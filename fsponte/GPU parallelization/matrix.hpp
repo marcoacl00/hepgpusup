@@ -38,7 +38,7 @@ public:
 	 * @brief Assigment operator
 	 * @param mtx Matrix
 	*/
-	void operator = (const matrix<type_t, N_LIN, N_COL>&);
+	void operator = (matrix<type_t, N_LIN, N_COL>);
 
 	/**
 	 * @brief Get operator
@@ -61,7 +61,15 @@ public:
 	 * @param mtx Matrix
 	 * @return Added matrix
 	*/
-	matrix<type_t, N_LIN, N_COL> operator + (const matrix<type_t, N_LIN, N_COL>&);
+	matrix<type_t, N_LIN, N_COL> operator + (matrix<type_t, N_LIN, N_COL>);
+
+	/**
+	 * @brief Multiplication operator
+	 * @param mtx Matrix
+	 * @return Multiplied matrix
+	*/
+	template <unsigned long _N_COL>
+	matrix<type_t, N_LIN, _N_COL> operator * (matrix<type_t, N_COL, _N_COL>);
 };
 
 // Template file

@@ -16,7 +16,7 @@ matrix<type_t, N_LIN, N_COL>::matrix(const matrix<type_t, N_LIN, N_COL>& mtx)
 }
 
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
-void matrix<type_t, N_LIN, N_COL>::operator = (const matrix<type_t, N_LIN, N_COL>& mtx)
+void matrix<type_t, N_LIN, N_COL>::operator = (matrix<type_t, N_LIN, N_COL> mtx)
 {
 	for (unsigned long i = 0; i < N_LIN; ++i)
 		this->_data[i] = mtx[i];
@@ -41,12 +41,32 @@ const vector<type_t, N_COL>& matrix<type_t, N_LIN, N_COL>::operator [] (const un
 }
 
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
-matrix<type_t, N_LIN, N_COL> matrix<type_t, N_LIN, N_COL>::operator + (const matrix<type_t, N_LIN, N_COL>& mtx)
+matrix<type_t, N_LIN, N_COL> matrix<type_t, N_LIN, N_COL>::operator + (matrix<type_t, N_LIN, N_COL> mtx)
 {
 	matrix<type_t, N_LIN, N_COL> ret;
 
 	for (unsigned long i = 0; i < N_LIN; ++i)
 		ret[i] = this->_data[i] + mtx[i];
+
+	return ret;
+}
+
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+template <unsigned long _N_COL>
+matrix<type_t, N_LIN, _N_COL> matrix<type_t, N_LIN, N_COL>::operator * (matrix<type_t, N_COL, _N_COL> mtx)
+{
+	matrix<type_t, N_LIN, _N_COL> ret;
+
+	for (unsigned long i = 0; i < N_LIN; ++i)
+	{
+		for (unsigned long j = 0; j < _N_COL; ++j)
+		{
+			ret[i][j] = 0;
+
+			for (unsigned long k = 0; k < N_COL; ++k)
+				ret[i][j] += this->_data[i][k] * mtx[k][j];
+		}
+	}
 
 	return ret;
 }
