@@ -57,6 +57,13 @@ public:
 	 * @return Added vector
 	*/
 	vector<type_t, DIM> operator + (vector<type_t, DIM>);
+
+	/**
+	 * @brief Dot product
+	 * @param vec Vector
+	 * @return Scalar
+	*/
+	type_t operator * (vector<type_t, DIM>);
 };
 
 // Template file
