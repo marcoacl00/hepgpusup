@@ -65,6 +65,7 @@ public:
 
 	/**
 	 * @brief Multiplication operator
+	 * @tparam _N_COL New number of columns
 	 * @param mtx Matrix
 	 * @return Multiplied matrix
 	*/
