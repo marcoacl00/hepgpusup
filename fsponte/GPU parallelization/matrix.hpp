@@ -78,6 +78,12 @@ public:
 	 * @return Transformed vector
 	*/
 	vector<type_t, N_LIN> operator * (vector<type_t, N_COL>);
+
+	/**
+	 * @brief Transpose
+	 * @return Transposed matrix
+	*/
+	matrix<type_t, N_COL, N_LIN> transpose(void) const;
 };
 
 // Template file
