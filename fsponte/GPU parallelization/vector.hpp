@@ -64,6 +64,11 @@ public:
 	 * @return Scalar
 	*/
 	type_t operator * (vector<type_t, DIM>);
+
+	/**
+	 * @brief Print vector to terminal
+	*/
+	void print(void) const;
 };
 
 // Template file

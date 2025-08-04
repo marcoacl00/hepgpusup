@@ -5,12 +5,6 @@
 #include "matrix.hpp"
 
 template <typename type_t, unsigned long DIM>
-void print(const vector<type_t, DIM>&);
-
-template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
-void print(const matrix<type_t, N_LIN, N_COL>&);
-
-template <typename type_t, unsigned long DIM>
 vector<type_t, DIM> fn(vector<type_t, DIM>);
 
 int main()
@@ -23,7 +17,7 @@ int main()
 		vec[0] = 1;
 		vec[1] = 3;
 		vec[2] = 9;
-		print(vec);
+		vec.print();
 	}
 
 	// Setup matrix
@@ -37,40 +31,18 @@ int main()
 		mtx[2][0] = 7;
 		mtx[2][1] = 8;
 		mtx[2][2] = 9;
-		print(mtx);
+		mtx.print();
 
 		mtx = mtx.transpose();
-		print(mtx);
+		mtx.print();
 	}
 
 	vector<double, 3> res = mtx * vec;
-	print(res);
+	res.print();
 	res = fn(res);
-	print(res);
+	res.print();
 
 	return 0;
-}
-
-template <typename type_t, unsigned long DIM>
-void print(const vector<type_t, DIM>& vec)
-{
-	std::cout << '(' << vec[0];
-
-	for (unsigned long i = 1; i < DIM; ++i)
-		std::cout << ", " << vec[i];
-
-	std::cout << ")\n";
-}
-
-template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
-void print(const matrix<type_t, N_LIN, N_COL>& mtx)
-{
-	std::cout << "{\n";
-
-	for (unsigned long i = 0; i < N_LIN; ++i)
-		print(mtx[i]);
-
-	std::cout << "}\n";
 }
 
 template <typename type_t, unsigned long DIM>

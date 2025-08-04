@@ -84,6 +84,11 @@ public:
 	 * @return Transposed matrix
 	*/
 	matrix<type_t, N_COL, N_LIN> transpose(void) const;
+
+	/**
+	 * @brief Print matrix to terminal
+	*/
+	void print(void) const;
 };
 
 // Template file

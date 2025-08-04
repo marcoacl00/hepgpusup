@@ -1,6 +1,9 @@
 #ifndef _MATRIX_TPP_
 #define _MATRIX_TPP_
 
+// Dependencies
+#include <iostream>
+
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 matrix<type_t, N_LIN, N_COL>::matrix(void)
 {
@@ -99,6 +102,17 @@ matrix<type_t, N_COL, N_LIN> matrix<type_t, N_LIN, N_COL>::transpose(void) const
 	}
 
 	return ret;
+}
+
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+void matrix<type_t, N_LIN, N_COL>::print(void) const
+{
+	std::cout << "{\n";
+
+	for (unsigned long i = 0; i < N_LIN; ++i)
+		this->_data[i].print();
+
+	std::cout << "}\n";
 }
 
 #endif // _MATRIX_TPP_

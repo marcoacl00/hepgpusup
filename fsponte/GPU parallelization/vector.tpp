@@ -1,6 +1,9 @@
 #ifndef _VECTOR_TPP_
 #define _VECTOR_TPP_
 
+// Dependencies
+#include <iostream>
+
 template <typename type_t, unsigned long DIM>
 vector<type_t, DIM>::vector(void)
 {
@@ -60,6 +63,17 @@ type_t vector<type_t, DIM>::operator * (vector<type_t, DIM> vec)
 		ret += this->_data[i] * vec[i];
 
 	return ret;
+}
+
+template <typename type_t, unsigned long DIM>
+void vector<type_t, DIM>::print(void) const
+{
+	std::cout << '(' << this->_data[0];
+
+	for (unsigned long i = 1; i < DIM; ++i)
+		std::cout << ", " << this->_data[i];
+
+	std::cout << ")\n";
 }
 
 #endif // _VECTOR_TPP_
