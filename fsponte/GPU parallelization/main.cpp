@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cmath>
 
 #include "vector.hpp"
 #include "matrix.hpp"
@@ -9,35 +10,37 @@ void print(const vector<type_t, DIM>&);
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 void print(const matrix<type_t, N_LIN, N_COL>&);
 
+template <typename type_t, unsigned long DIM>
+vector<type_t, DIM> fn(vector<type_t, DIM>);
+
 int main()
 {
-	matrix<double, 3, 3> mtx_1, mtx_2, mtx_3;
+	vector<double, 3> vec;
+	matrix<double, 3, 3> mtx;
 
-	mtx_1[0][0] = 1;
-	mtx_1[0][1] = 2;
-	mtx_1[0][2] = 3;
-	mtx_1[1][0] = 4;
-	mtx_1[1][1] = 5;
-	mtx_1[1][2] = 6;
-	mtx_1[2][0] = 7;
-	mtx_1[2][1] = 8;
-	mtx_1[2][2] = 9;
+	vec[0] = 1;
+	vec[1] = 3;
+	vec[2] = 9;
+	print(vec);
 
-	mtx_2[0][0] = 9;
-	mtx_2[0][1] = 8;
-	mtx_2[0][2] = 7;
-	mtx_2[1][0] = 6;
-	mtx_2[1][1] = 5;
-	mtx_2[1][2] = 4;
-	mtx_2[2][0] = 3;
-	mtx_2[2][1] = 2;
-	mtx_2[2][2] = 1;
+	mtx[0][0] = 1;
+	mtx[0][1] = 2;
+	mtx[0][2] = 3;
+	mtx[1][0] = 4;
+	mtx[1][1] = 5;
+	mtx[1][2] = 6;
+	mtx[2][0] = 7;
+	mtx[2][1] = 8;
+	mtx[2][2] = 9;
+	print(mtx);
 
-	mtx_3 = mtx_1 + mtx_2;
+	mtx = mtx.transpose();
+	print(mtx);
 
-	print(mtx_1);
-	print(mtx_2);
-	print(mtx_3);
+	vector<double, 3> res = mtx * vec;
+	print(res);
+	res = fn(res);
+	print(res);
 
 	return 0;
 }
@@ -62,4 +65,15 @@ void print(const matrix<type_t, N_LIN, N_COL>& mtx)
 		print(mtx[i]);
 
 	std::cout << "}\n";
+}
+
+template <typename type_t, unsigned long DIM>
+vector<type_t, DIM> fn(vector<type_t, DIM> vec)
+{
+	vector<type_t, DIM> ret;
+
+	for (unsigned long i = 0; i < DIM; ++i)
+		ret[i] = std::sin(std::cos(std::log(vec[i])));
+
+	return ret;
 }
