@@ -1,2 +1,2 @@
 g++ main.cpp -o prog -Wall -Wextra -Wpedantic
-./prog | tee stdout.txt
+time -v ./prog | tee stdout.txt

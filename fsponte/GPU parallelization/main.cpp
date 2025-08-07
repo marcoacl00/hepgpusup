@@ -42,6 +42,8 @@ int main()
 	res = fn(res);
 	res.print();
 
+	std::cout << std::endl;
+
 	return 0;
 }
 
