@@ -2,15 +2,18 @@
 #include <Eigen/Sparse>
 #include <cmath>
 #include <complex>
+#include <fstream>
 #include <functional>
 #include <iostream>
+#include <ostream>
 #include <vector>
-#include <fstream>
 
 using Complex = std::complex<double>;
-using SparseMatrix = Eigen::SparseMatrix<double>;
-using Eigen::MatrixXd;
+using MatrixXd = Eigen::MatrixXd;
+using MatrixXcd = Eigen::MatrixXcd;
+using SparseXd = Eigen::SparseMatrix<double>;
 using Eigen::VectorXcd;
+using Eigen::VectorXd;
 
 class SchrodingerSolver {
 private:
@@ -28,81 +31,69 @@ private:
   std::function<double(double)> Potential;
   std::vector<double> chebyshevCoeff;
 
-  SparseMatrix Hamiltonian;
+  SparseXd Hamiltonian;
+  MatrixXcd ChebyshevProp;
   VectorXcd currentSolution;
 
   std::vector<double> positionExpValues;
 
   /* MEHTODS */
 
-  double GenerateChebyshevCoeff(double a, int n) {
+  Complex GenerateChebyshevCoeff(int n, double lambda) {
     double r = (n == 0) ? 1.0 : 2.0;
-    return r * std::cyl_bessel_j(n, a);
+    return r * std::pow(Complex(0, -1), n) * std::cyl_bessel_j(n, dt * lambda);
   }
 
-  
   void BuildHamiltonian() {
     std::vector<Eigen::Triplet<double>> triplets;
-    double kineticCoeff = -hbar * hbar / (2.0 * dx * dx);
+    double kineticDiag = 2.0 / (dx * dx) * (1.0 / (2.0));
+    double kineticOffDiag = -1.0 / (dx * dx) * (1.0 / (2.0));
+
+    triplets.reserve(3 * numStepsX - 2);
 
     for (int i = 0; i < numStepsX; ++i) {
       double x = xmin + i * dx;
       double Vx = Potential(x);
+      triplets.emplace_back(i, i, kineticDiag + Vx);
 
-      if (i == 0) {
-        // Left boundary: one-sided second derivative
-        triplets.emplace_back(0, 0, kineticCoeff * 2.0 + Vx);
-        triplets.emplace_back(0, 1, kineticCoeff * -5.0);
-        triplets.emplace_back(0, 2, kineticCoeff * 4.0);
-        triplets.emplace_back(0, 3, kineticCoeff * -1.0);
-      } else if (i == numStepsX - 1) {
-        // Right boundary: one-sided second derivative
-        triplets.emplace_back(i, i, kineticCoeff * 2.0 + Vx);
-        triplets.emplace_back(i, i - 1, kineticCoeff * -5.0);
-        triplets.emplace_back(i, i - 2, kineticCoeff * 4.0);
-        triplets.emplace_back(i, i - 3, kineticCoeff * -1.0);
-      } else {
-        // Interior: standard 3-point stencil
-        triplets.emplace_back(i, i, kineticCoeff * -2.0 + Vx);
-        triplets.emplace_back(i, i - 1, kineticCoeff);
-        triplets.emplace_back(i, i + 1, kineticCoeff);
+      if (i > 0) {
+        triplets.emplace_back(i, i - 1, kineticOffDiag);
+      }
+
+      if (i < numStepsX - 1) {
+        triplets.emplace_back(i, i + 1, kineticOffDiag);
       }
     }
 
     Hamiltonian.resize(numStepsX, numStepsX);
     Hamiltonian.setFromTriplets(triplets.begin(), triplets.end());
+    Hamiltonian.makeCompressed();
   }
 
-   
-  double CalculateEmin() {
-    double result = Potential(xmin);
-    for (int i = 1; i < numStepsX; i++) {
-      double potential = Potential(xmin + i*dx); 
-      if (potential < result) {
-        result = potential;
-      }
+  double NormalizeHamiltonian() {
+    Eigen::SelfAdjointEigenSolver<MatrixXd> solver(Hamiltonian);
+    VectorXd ev = solver.eigenvalues();
+    double minev = ev.minCoeff();
+    double maxev = ev.maxCoeff();
+    double lambda = maxev - minev;
+    Hamiltonian = (1 / lambda) * Hamiltonian;
+
+    return lambda;
+  }
+
+  void BuildChebyshevMatrix(double lambda, int M) {
+    MatrixXd A0 = MatrixXd::Identity(numStepsX, numStepsX);
+    MatrixXd A1 = Hamiltonian;
+
+    ChebyshevProp = GenerateChebyshevCoeff(0, lambda) * A0 +
+                    GenerateChebyshevCoeff(1, lambda) * A1;
+
+    for (int k = 2; k < M + 1; k++) {
+      MatrixXd A2 = 2.0 * Hamiltonian * A1 - A0;
+      ChebyshevProp += GenerateChebyshevCoeff(k, lambda) * A2;
+      A0 = A1;
+      A1 = A2;
     }
-    return result;
-  }
-
-  double CalculateEmax() {
-    double result = Potential(xmin);
-    for (int i = 1; i < numStepsX; i++) {
-      double potential = Potential(xmin + i*dx); 
-      if (potential > result) {
-        result = potential;
-      }
-    }
-    return result + hbar*hbar*M_PI*M_PI/(2*dx*dx);
-  }
-
-  void NormalizeHamiltonian() {
-    SparseMatrix I(numStepsX, numStepsX);
-    I.setIdentity();
-    double Emin = CalculateEmin();
-    double Emax = CalculateEmax();
-    double dE = Emax-Emin;
-    Hamiltonian = 2*(Hamiltonian - (dE/2 + Emin)*I)/dE;
   }
 
   void Normalize() {
@@ -117,15 +108,13 @@ private:
   }
 
   double CalculatePosExpectedValue() {
-    Normalize();
-    
     double result = 0;
     for (int i = 0; i < numStepsX; i++) {
-      double x = xmin + i*dx;
-      result += x * std::norm(currentSolution[i]); 
+      double x = xmin + i * dx;
+      result += x * std::norm(currentSolution[i]);
     }
 
-    return dx*result;
+    return dx * result;
   }
 
 public:
@@ -143,44 +132,21 @@ public:
   void SetInitialState(std::function<Complex(double)> f) {
     currentSolution = VectorXcd::Zero(numStepsX);
     for (int i = 0; i < numStepsX; i++) {
-      currentSolution[i] = f(xmin + i*dx);
+      currentSolution[i] = f(xmin + i * dx);
     }
   }
 
   void SolveSystem(int M) {
     BuildHamiltonian();
-    NormalizeHamiltonian();
-    
-    double Emin = CalculateEmin(); double Emax = CalculateEmax();
-    double dE = Emax - Emin;
-
-    VectorXcd prevChebyshevTerm(numStepsX);
-    VectorXcd prevPrevChebyshevTerm(numStepsX);
-    VectorXcd currentChebyshevTerm(numStepsX);
+    double lambda = NormalizeHamiltonian();
 
     positionExpValues[0] = CalculatePosExpectedValue();
 
-    for (int i = 1; i < numStepsT; i++) {
-      double a = dE*i*dt/(2*hbar);
-      VectorXcd newSolution(numStepsX);
-      
-      currentChebyshevTerm = currentSolution;
-      newSolution += GenerateChebyshevCoeff(a, 0) * currentChebyshevTerm;
-      prevChebyshevTerm = currentChebyshevTerm;
-      
-      currentChebyshevTerm = Complex(0,-1)*Hamiltonian*prevChebyshevTerm;
-      newSolution += GenerateChebyshevCoeff(a, 1) * currentChebyshevTerm;
-      prevPrevChebyshevTerm = prevChebyshevTerm;
-      prevChebyshevTerm = currentChebyshevTerm;
-      
-      for (int k = 2; k < M+1; k++) {
-        currentChebyshevTerm = Complex(0,-1)*2.0*Hamiltonian*prevChebyshevTerm + prevPrevChebyshevTerm;
-        newSolution += GenerateChebyshevCoeff(a, k)*currentChebyshevTerm;
-        prevPrevChebyshevTerm = prevChebyshevTerm;
-        prevChebyshevTerm = currentChebyshevTerm;
-      }
+    BuildChebyshevMatrix(lambda, M);
 
-      currentSolution = std::exp(Complex(0, -1)*(Emin*i*dt/hbar + a))*newSolution;
+    for (int i = 1; i < numStepsT; i++) {
+      VectorXcd newSolution = ChebyshevProp * currentSolution;
+      currentSolution = newSolution;
       positionExpValues[i] = CalculatePosExpectedValue();
 
       if (i % 100 == 0) {
@@ -190,16 +156,16 @@ public:
   }
 
   void PrintResults() {
-    for (int t = 0; t < numStepsT; t+=10) {
-      std::cout << positionExpValues[t] << std::endl; 
+    for (int t = 0; t < numStepsT; t += 10) {
+      std::cout << positionExpValues[t] << std::endl;
     }
   }
 
-  void SaveResults(const std::string& filename) {
+  void SaveResults(const std::string &filename) {
     std::ofstream outfile(filename);
-    for (int t = 0; t < numStepsT; ++t) {
+    for (int t = 0; t < numStepsT; t++) {
       outfile << t * dt << " " << positionExpValues[t] << std::endl;
-    } 
+    }
     outfile.close();
   }
 };
@@ -209,44 +175,51 @@ double LennardJonesPotential(double x) {
   double epsilon = 4.642973059984742;
 
   if (x < 1e-10)
-    x = 1e-10; // Avoid division by zero
+    x = 1e-10;
   double sr6 = std::pow(sigma / x, 6);
   return 4.0 * epsilon * (sr6 * sr6 - sr6);
-
 }
 
 double HOPotential(double x) {
-  double w2 = 400;
+  double w2 = 1;
   return 0.5 * w2 * x * x;
 }
 
 Complex GaussianPulse(double x) {
-  double x0 = 2.55;
-  double k = 0;
-  double amplitude = pow(1/M_PI, 0.25);
+  double x0 = 0;
+  double k = 2;
   double sigma = 1;
+  double amplitude = pow(1 / (M_PI * sigma), 0.25);
 
-  double real_part = amplitude * std::exp(-std::pow(x - x0, 2)*20 / (2 * sigma * sigma));
-  Complex phase = std::exp(Complex(0, k * x));  
-
-  return real_part * phase;
-  
+  return std::exp(-((x - x0) * (x - x0 - Complex(0, 2) * k * sigma)) /
+                  (2 * sigma)) /
+         (pow(M_PI, 0.25) * pow(sigma, 0.25));
 }
 
-int main (int argc, char *argv[]) {
-  double dx = 0.005; double dt = 0.01;
-  double tmin = 0; double tmax = 10;
-  double xmin = 1.5; double xmax = 6.5;
+int main(int argc, char *argv[]) {
+  double dx = 0.07874;
+  double dt = 0.05;
+  double tmin = 0;
+  double tmax = 100;
+  double xmin = -5;
+  double xmax = 5;
   double hbar = 1;
 
-  SchrodingerSolver solver(dx, dt, tmin, tmax, xmin, xmax, hbar, LennardJonesPotential);
+  std::ofstream initialPulseFile("initial_pulse.txt");
+  for (double x = xmin; x <= xmax; x += dx) {
+    Complex psi = GaussianPulse(x);
+    initialPulseFile << x << " " << psi.real() << " " << psi.imag() << " "
+                     << std::norm(psi) << std::endl;
+  }
+  initialPulseFile.close();
+
+  SchrodingerSolver solver(dx, dt, tmin, tmax, xmin, xmax, hbar, HOPotential);
 
   solver.SetInitialState(GaussianPulse);
 
-  solver.SolveSystem(50); 
-  
+  solver.SolveSystem(40);
+
   solver.SaveResults("data.txt");
-  //solver.PrintResults();
-  
+
   return 0;
 }
