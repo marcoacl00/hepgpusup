@@ -1,230 +1,140 @@
-#include <algorithm>
 #include <cmath>
-#include <cstdlib>
 #include <fstream>
 #include <iostream>
-#include <numeric>
 #include <random>
-#include <string>
 #include <vector>
 
 using Lattice = std::vector<std::vector<double>>;
 
 class HMC {
 private:
-  // Simulation parameters
-  int N;     // Grid size
-  double dt; // Time step
-  double H;  // External field
-  int L;     // Leapfrog steps per trajectory
-
-  // Internal state
-  Lattice q, p;
+  int N;
+  Lattice phi, p;
+  double dt;
   std::random_device device;
-  std::vector<double> avgQ, avgP;
 
-  Lattice CalculateForce(double T, double lambda) {
-    Lattice force(N, std::vector<double>(N, 0));
+  Lattice CalculateForce(double T, double lambda, double H) {
+    Lattice f(N, std::vector<double>(N, 0.0));
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < N; j++) {
         int ip = (i + 1) % N, im = (i - 1 + N) % N;
         int jp = (j + 1) % N, jm = (j - 1 + N) % N;
-        force[i][j] = -(q[i][j] - (q[i][jp] + q[ip][j] + q[i][jm] + q[im][j]) +
-                        T * q[i][j] + 2 * lambda * pow(q[i][j], 3) + H);
+        double qi = std::tanh(phi[i][j]);
+        double qip = std::tanh(phi[ip][j]);
+        double qim = std::tanh(phi[im][j]);
+        double qjp = std::tanh(phi[i][jp]);
+        double qjm = std::tanh(phi[i][jm]);
+        double neighbor_contrib = 4.0 * qi - (qip + qim + qjp + qjm);
+        double dS_dq = neighbor_contrib + 2.0 * T * qi + 4.0 * lambda * std::pow(qi, 3) + H;
+        double dq_dphi = 1.0 - qi * qi;
+        f[i][j] = -dS_dq * dq_dphi;
       }
     }
-    return force;
+    return f;
   }
 
-  void LeapFrog(double T, double lambda) {
-    Lattice force = CalculateForce(T, lambda);
+  void LeapFrogIntegrator(int L, double T, double lambda, double H) {
+    Lattice f = CalculateForce(T, lambda, H);
     for (int k = 0; k < L; k++) {
       for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-          p[i][j] += 0.5 * dt * force[i][j];
-          q[i][j] += dt * p[i][j];
+          p[i][j] += 0.5 * dt * f[i][j];
+          phi[i][j] += dt * p[i][j];
         }
       }
-      force = CalculateForce(T, lambda);
+      f = CalculateForce(T, lambda, H);
       for (int i = 0; i < N; i++) {
         for (int j = 0; j < N; j++) {
-          p[i][j] += 0.5 * dt * force[i][j];
+          p[i][j] += 0.5 * dt * f[i][j];
         }
       }
     }
   }
 
-  double Hamiltonian(double T, double lambda) {
-    double kin = 0, pot = 0;
+  double CalculateHamiltonian(double T, double lambda, double H) {
+    double kE = 0.0, pE = 0.0;
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < N; j++) {
-        kin += 0.5 * p[i][j] * p[i][j];
+        double qi = std::tanh(phi[i][j]);
+        kE += 0.5 * p[i][j] * p[i][j];
         int ip = (i + 1) % N, jp = (j + 1) % N;
-        pot += 0.5 * (pow(q[i][j] - q[i][jp], 2) + pow(q[i][j] - q[ip][j], 2)) +
-               T * q[i][j] * q[i][j] + lambda * pow(q[i][j], 4) + H * q[i][j];
+        double qip = std::tanh(phi[ip][j]);
+        double qjp = std::tanh(phi[i][jp]);
+        pE += 0.5 * (qi - qip) * (qi - qip);
+        pE += 0.5 * (qi - qjp) * (qi - qjp);
+        pE += T * qi * qi;
+        pE += lambda * qi * qi * qi * qi;
+        pE += H * qi;
       }
     }
-    return kin + pot;
+    return kE + pE;
   }
 
-  void UpdateLattice(double T, double lambda) {
+  void UpdateLattice(int L, double T, double lambda, double H) {
     std::mt19937 gen(device());
-    std::normal_distribution<double> gauss(0, 1);
-    std::uniform_real_distribution<double> uniform(0, 1);
-
-    for (auto &row : p)
-      for (double &val : row)
-        val = gauss(gen);
-
-    double H_old = Hamiltonian(T, lambda);
-    Lattice q_old = q;
-    LeapFrog(T, lambda);
-    double H_new = Hamiltonian(T, lambda);
-
-    double dH = H_new - H_old;
-    if (uniform(gen) > exp(-dH))
-      q = q_old;
+    std::normal_distribution<double> nd(0, 1);
+    std::uniform_real_distribution<double> ud(0, 1);
+    for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) p[i][j] = nd(gen);
+    double H0 = CalculateHamiltonian(T, lambda, H);
+    Lattice phi_old = phi;
+    LeapFrogIntegrator(L, T, lambda, H);
+    double H1 = CalculateHamiltonian(T, lambda, H);
+    double prob = exp(-H1 + H0);
+    if (ud(gen) > (prob > 1 ? 1 : prob)) phi = phi_old;
+    else for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) p[i][j] = -p[i][j];
   }
 
-  double AvgQ() const {
-    double sum = 0;
-    for (const auto &row : q)
-      sum += std::accumulate(row.begin(), row.end(), 0.0);
-    return sum / (N * N);
+  double AvgQ() {
+    double s = 0.0;
+    for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) s += std::tanh(phi[i][j]);
+    return s / (N * N);
   }
 
 public:
-  HMC(int N_p = 16, double dt_p = 0.01, double H_p = 0.0, int L_p = 10)
-      : N(N_p), dt(dt_p), H(H_p), L(L_p), q(N, std::vector<double>(N)),
-        p(N, std::vector<double>(N)) {}
+  HMC(int Np, double dtp) : N(Np), dt(dtp) {
+    phi = Lattice(N, std::vector<double>(N, 0));
+    p = Lattice(N, std::vector<double>(N, 0));
+  }
 
   void InitializeLattice() {
     std::mt19937 gen(device());
-    std::uniform_real_distribution<double> dist(-1.0, 1.0);
-    for (auto &row : q)
-      for (double &val : row)
-        val = dist(gen);
+    std::uniform_real_distribution<double> ud(-1, 1);
+    for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) phi[i][j] = atanh(ud(gen));
   }
 
-  void RunSimulation(int steps, double T, double lambda) {
-    avgQ.resize(steps);
-    for (int i = 0; i < steps; i++) {
-      UpdateLattice(T, lambda);
-      avgQ[i] = AvgQ();
-    }
-  }
-
-  double FindCriticalTemperature(double Tc_guess, double T_min, double T_max,
-                                 double dT, int thermal_steps,
-                                 int measure_steps) {
-    double Tc_current = Tc_guess;
-    double Tc_prev = 0.0;
-    const double tolerance = 0.001;
-    int iteration = 0;
-
-    while (std::abs(Tc_current - Tc_prev) > tolerance && iteration < 20) {
-      Tc_prev = Tc_current;
-      double peak_T = 0.0;
-      double max_chi = 0.0;
-
-      std::ofstream out("Tc_search_iter_" + std::to_string(iteration) + ".txt");
-      out << "# T \t <|m|> \t chi\n";
-
-      for (double T = T_min; T <= T_max; T += dT) {
-        std::cout << "Progress: T = " << T << std::endl;
-        double lambda = (T - Tc_current) / T;
-        InitializeLattice();
-        RunSimulation(thermal_steps, T, lambda); // Thermalize
-        RunSimulation(measure_steps, T, lambda); // Measure
-
-        double avg_m = 0, avg_m2 = 0;
-        for (size_t i = avgQ.size() / 2; i < avgQ.size(); i++) {
-          avg_m += std::abs(avgQ[i]);
-          avg_m2 += avgQ[i] * avgQ[i];
-        }
-        avg_m /= (avgQ.size() / 2);
-        avg_m2 /= (avgQ.size() / 2);
-        double chi = N * N * (avg_m2 - avg_m * avg_m) / T;
-
-        out << T << "\t" << avg_m << "\t" << chi << "\n";
-
-        if (chi > max_chi) {
-          max_chi = chi;
-          peak_T = T;
-        }
+  void MeasureAtT(double T, double lambda, double H, int simSteps, int LeapSteps, double &m_abs, double &sus, double &binder) {
+    InitializeLattice();
+    int eqSteps = simSteps / 3;
+    double m_sum = 0, m2_sum = 0, m4_sum = 0;
+    for (int i = 0; i < simSteps; i++) {
+      UpdateLattice(LeapSteps, T, lambda, H);
+      if (i >= eqSteps) {
+        double m = AvgQ();
+        m_sum += std::abs(m);
+        m2_sum += m * m;
+        m4_sum += m * m * m * m;
       }
-      out.close();
-      Tc_current = peak_T;
-      std::cout << "Iteration " << iteration << ": Tc = " << Tc_current << "\n";
-      iteration++;
     }
-    return Tc_current;
+    int measCount = simSteps - eqSteps;
+    m_abs = m_sum / measCount;
+    sus = N * N * (m2_sum / measCount - (m_sum / measCount) * (m_sum / measCount)) / T;
+    binder = 1.0 - (m4_sum / measCount) / (3.0 * (m2_sum / measCount) * (m2_sum / measCount));
   }
 };
 
-void show_help(const char *program_name) {
-  std::cout << "Usage: " << program_name << " [options]\n"
-            << "Options:\n"
-            << "  -N <size>        Lattice size (default: 16)\n"
-            << "  -dt <step>       Time step (default: 0.01)\n"
-            << "  -H <field>       External field (default: 0.0)\n"
-            << "  -L <steps>       Leapfrog steps (default: 10)\n"
-            << "  -Tc <guess>      Initial Tc guess (default: 2.3)\n"
-            << "  -Tmin <value>    Minimum T for scan (default: 1.5)\n"
-            << "  -Tmax <value>    Maximum T for scan (default: 3.0)\n"
-            << "  -dT <step>       Temperature step (default: 0.05)\n"
-            << "  -therm <steps>   Thermalization steps (default: 1000)\n"
-            << "  -meas <steps>    Measurement steps (default: 2000)\n";
-}
-
-int main(int argc, char **argv) {
-  // Default parameters
-  int N = 16;
-  double dt = 0.01;
-  double H = 0.0;
-  int L = 10;
-  double Tc_guess = 2.3;
-  double T_min = 1.5, T_max = 3.0, dT = 0.05;
-  int thermal_steps = 1000, measure_steps = 2000;
-
-  // Parse command-line arguments
-  for (int i = 1; i < argc; i++) {
-    std::string arg = argv[i];
-    if (arg == "-N" && i + 1 < argc)
-      N = atoi(argv[++i]);
-    else if (arg == "-dt" && i + 1 < argc)
-      dt = atof(argv[++i]);
-    else if (arg == "-H" && i + 1 < argc)
-      H = atof(argv[++i]);
-    else if (arg == "-L" && i + 1 < argc)
-      L = atoi(argv[++i]);
-    else if (arg == "-Tc" && i + 1 < argc)
-      Tc_guess = atof(argv[++i]);
-    else if (arg == "-Tmin" && i + 1 < argc)
-      T_min = atof(argv[++i]);
-    else if (arg == "-Tmax" && i + 1 < argc)
-      T_max = atof(argv[++i]);
-    else if (arg == "-dT" && i + 1 < argc)
-      dT = atof(argv[++i]);
-    else if (arg == "-therm" && i + 1 < argc)
-      thermal_steps = atoi(argv[++i]);
-    else if (arg == "-meas" && i + 1 < argc)
-      measure_steps = atoi(argv[++i]);
-    else if (arg == "-h" || arg == "--help") {
-      show_help(argv[0]);
-      return 0;
-    } else {
-      std::cerr << "Unknown option: " << arg << "\n";
-      show_help(argv[0]);
-      return 1;
-    }
+int main() {
+  int N = 16, simSteps = 10000, LeapSteps = 20;
+  double dt = 0.01, H = 0.0, lambda = 1.0;
+  HMC hmc(N, dt);
+  std::ofstream out("Tc.txt");
+  out << "Temp\tm_abs\tsus\tbinder\n";
+  for (double T = 0.5; T <= 4.0; T += 0.1) {
+    double m_abs, sus, binder;
+    hmc.MeasureAtT(T, lambda, H, simSteps, LeapSteps, m_abs, sus, binder);
+    out << T << "\t" << m_abs << "\t" << sus << "\t" << binder << "\n";
+    std::cout << T << " done\n";
   }
-
-  // Run simulation
-  HMC hmc(N, dt, H, L);
-  double Tc = hmc.FindCriticalTemperature(Tc_guess, T_min, T_max, dT,
-                                          thermal_steps, measure_steps);
-  std::cout << "\nFinal critical temperature: Tc = " << Tc << "\n";
-
+  out.close();
   return 0;
 }
+

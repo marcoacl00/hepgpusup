@@ -4,7 +4,7 @@ CXXFLAGS =
 EIGEN_INCLUDE = -I/usr/local/include/eigen3
 
 # Default source (can be overridden via command line)
-SRC ?= chebyshev_schro3.cpp
+SRC ?= chebyshev.cpp
 TARGET ?= main
 
 all: $(TARGET)

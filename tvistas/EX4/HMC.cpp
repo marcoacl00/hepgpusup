@@ -1,6 +1,6 @@
 #include <cmath>
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <ostream>
 #include <random>
 #include <vector>
@@ -19,17 +19,18 @@ private:
   std::vector<double> avgP;
 
   Lattice CalculateForce(double T, double lambda, double H) {
-    Lattice forceField = Lattice(N, std::vector<double>(N,0));
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < N; j++) {
-        
+    Lattice forceField(N, std::vector<double>(N, 0.0));
+    for (int i = 0; i < N; ++i) {
+      for (int j = 0; j < N; ++j) {
         int ip = (i + 1) % N;
         int im = (i - 1 + N) % N;
         int jp = (j + 1) % N;
         int jm = (j - 1 + N) % N;
-
-        forceField[i][j] = -(q[i][j] - (q[i][jp] + q[ip][j] + q[i][jm] + q[im][j]) +
-            T * q[i][j] + 2 * lambda * pow(q[i][j],3) + H);
+        double neighbor_contrib =
+            4.0 * q[i][j] - (q[ip][j] + q[im][j] + q[i][jp] + q[i][jm]);
+        double dS_dq = neighbor_contrib + 2.0 * T * q[i][j] +
+                       4.0 * lambda * std::pow(q[i][j], 3) + H;
+        forceField[i][j] = -dS_dq;
       }
     }
     return forceField;
@@ -55,21 +56,22 @@ private:
   }
 
   double CalculateHamiltonian(double T, double lambda, double H) {
-    double kEnergy = 0;
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < N; j++) {
+    double kEnergy = 0.0;
+    double potential = 0.0;
+    for (int i = 0; i < N; ++i) {
+      for (int j = 0; j < N; ++j) {
         kEnergy += 0.5 * p[i][j] * p[i][j];
-      }
-    }
 
-    double pEnergy = 0;
-    for (int i = 0; i < N; i++) {
-      for (int j = 0; j < N; j++) {
-        pEnergy += 0.5*( (q[i][j]-q[i][(j+1)%N])*(q[i][j]-q[i][(j+1)%N]) + (q[i][j]-q[(i+1)%N][j])*(q[i][j]-q[(i+1)%N][j]) + 
-            T*q[i][j]*q[i][j] + lambda*q[i][j]*q[i][j]*q[i][j]*q[i][j] + H*q[i][j]);
+        int ip = (i + 1) % N;
+        int jp = (j + 1) % N;
+        potential += 0.5 * (q[i][j] - q[ip][j]) * (q[i][j] - q[ip][j]);
+        potential += 0.5 * (q[i][j] - q[i][jp]) * (q[i][j] - q[i][jp]);
+        potential += T * q[i][j] * q[i][j];
+        potential += lambda * q[i][j] * q[i][j] * q[i][j] * q[i][j];
+        potential += H * q[i][j];
       }
     }
-    return kEnergy + pEnergy;
+    return kEnergy + potential;
   }
 
   void UpdateLattice(int L, double T, double lambda, double H) {
@@ -89,9 +91,9 @@ private:
     double finalH = CalculateHamiltonian(T, lambda, H);
 
     double boltzmanProb = exp(-finalH + initH);
-    double acceptionRate = (boltzmanProb > 1)? 1:boltzmanProb;
+    double acceptionRate = (boltzmanProb > 1) ? 1 : boltzmanProb;
 
-    if (uDistribution(generator)>acceptionRate) {
+    if (uDistribution(generator) > acceptionRate) {
       q = qOld;
       return;
     }
@@ -104,33 +106,33 @@ private:
   }
 
   double AvgQ() {
-    double result = 0; 
-   
+    double result = 0;
+
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < N; j++) {
-        result += q[i][j]; 
+        result += q[i][j];
       }
     }
 
-    return result/(N*N);
+    return result / (N * N);
   }
 
   double AvgP() {
-    double result = 0; 
-   
+    double result = 0;
+
     for (int i = 0; i < N; i++) {
       for (int j = 0; j < N; j++) {
-        result += p[i][j]; 
+        result += p[i][j];
       }
     }
 
-    return result/(N*N);
+    return result / (N * N);
   }
 
 public:
   HMC(int N_p, double dt_p) : N(N_p), dt(dt_p) {
-    q = Lattice(N, std::vector<double>(N,0));
-    p = Lattice(N, std::vector<double>(N,0));
+    q = Lattice(N, std::vector<double>(N, 0));
+    p = Lattice(N, std::vector<double>(N, 0));
   }
 
   void InitializeLattice() {
@@ -144,18 +146,22 @@ public:
     }
   }
 
-  void RunSimulation(int simSteps, int LeapSteps, double T, double lambda, double H) {
+  void RunSimulation(int simSteps, int LeapSteps, double T, double lambda,
+                     double H) {
     avgQ.resize(simSteps);
     avgP.resize(simSteps);
 
     for (int i = 0; i < simSteps; i++) {
+      if (i % (simSteps / 10) == 0)
+        std::cout << "Progress: " << i << "/" << simSteps << std::endl;
       UpdateLattice(LeapSteps, T, lambda, H);
       avgQ[i] = AvgQ();
       avgP[i] = AvgP();
     }
   }
 
-  void WriteToFile(const std::string& filename, const std::vector<std::vector<double>>& phaseSpace) {
+  void WriteToFile(const std::string &filename,
+                   const std::vector<std::vector<double>> &phaseSpace) {
     std::ofstream outFile(filename);
     if (!outFile.is_open()) {
       std::cerr << "Error: Could not open file " << filename << std::endl;
@@ -167,85 +173,92 @@ public:
 
     // Write data
     for (size_t i = 0; i < phaseSpace[0].size(); ++i) {
-      outFile << i << "\t" << phaseSpace[0][i] << "\t" << phaseSpace[1][i] << "\n";
+      outFile << i << "\t" << phaseSpace[0][i] << "\t" << phaseSpace[1][i]
+              << "\n";
     }
 
     outFile.close();
     std::cout << "Data written to " << filename << std::endl;
   }
 
-  void WriteLattice(const std::string& filename) {
+  void WriteLattice(const std::string &filename) {
     std::ofstream outFile(filename);
 
     outFile << "# " << q.size() << std::endl;
-    for (const auto& row : q) {
-        for (double val : row) {
-            outFile << val << " ";
-        }
-        outFile << "\n";
+    for (const auto &row : q) {
+      for (double val : row) {
+        outFile << val << " ";
+      }
+      outFile << "\n";
     }
     outFile.close();
     std::cout << "Data written to " << filename << std::endl;
   }
 
-  std::vector<double> GetAvgQ() {return avgQ;}
-  std::vector<double> GetAvgP() {return avgP;}
-  Lattice GetQ() {return q;}
-  Lattice GetP() {return p;}
+  std::vector<double> GetAvgQ() { return avgQ; }
+  std::vector<double> GetAvgP() { return avgP; }
+  Lattice GetQ() { return q; }
+  Lattice GetP() { return p; }
 };
 
-
-
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
   int N = 16;
   double dt = 0.01;
   int simSteps = 13000;
-  int LeapSteps = 10;
+  int LeapSteps = 15;
   double H = 0.05;
   double T = 2;
   double lambda = 0.7;
 
   for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        if (arg == "-N" && i + 1 < argc) N = std::stoi(argv[++i]);
-        else if (arg == "-dt" && i + 1 < argc) dt = std::stod(argv[++i]);
-        else if (arg == "-s" && i + 1 < argc) simSteps = std::stoi(argv[++i]);
-        else if (arg == "-l" && i + 1 < argc) LeapSteps = std::stoi(argv[++i]);
-        else if (arg == "-T" && i + 1 < argc) T = std::stod(argv[++i]);
-        else if (arg == "-lambda" && i + 1 < argc) lambda = std::stod(argv[++i]);
-        else if (arg == "-H" && i + 1 < argc) H = std::stod(argv[++i]);
-        else {
-            std::cerr << "Unknown option or missing argument: " << arg << std::endl;
-            std::cerr << "Usage: " << argv[0] << " [-N grid_size] [-dt timestep] "
-                      << "[-s sim_steps] [-l leap_steps] [-T temperature] "
-                      << "[-lambda lambda] [-H Magnetic_field]\n";
-            return 1;
-        }
+    std::string arg = argv[i];
+    if (arg == "-N" && i + 1 < argc)
+      N = std::stoi(argv[++i]);
+    else if (arg == "-dt" && i + 1 < argc)
+      dt = std::stod(argv[++i]);
+    else if (arg == "-s" && i + 1 < argc)
+      simSteps = std::stoi(argv[++i]);
+    else if (arg == "-l" && i + 1 < argc)
+      LeapSteps = std::stoi(argv[++i]);
+    else if (arg == "-T" && i + 1 < argc)
+      T = std::stod(argv[++i]);
+    else if (arg == "-lambda" && i + 1 < argc)
+      lambda = std::stod(argv[++i]);
+    else if (arg == "-H" && i + 1 < argc)
+      H = std::stod(argv[++i]);
+    else {
+      std::cerr << "Unknown option or missing argument: " << arg << std::endl;
+      std::cerr << "Usage: " << argv[0] << " [-N grid_size] [-dt timestep] "
+                << "[-s sim_steps] [-l leap_steps] [-T temperature] "
+                << "[-lambda lambda] [-H Magnetic_field]\n";
+      return 1;
     }
+  }
 
-  HMC hmc(N, dt); 
-  
+  HMC hmc(N, dt);
+
   hmc.InitializeLattice();
 
   hmc.RunSimulation(simSteps, LeapSteps, T, lambda, H);
-  std::vector<std::vector<double>> phaseSpace = std::vector<std::vector<double>>(2, std::vector<double>(simSteps, 0));
+  std::vector<std::vector<double>> phaseSpace =
+      std::vector<std::vector<double>>(2, std::vector<double>(simSteps, 0));
 
   phaseSpace[0] = hmc.GetAvgQ();
   phaseSpace[1] = hmc.GetAvgP();
   hmc.WriteToFile("hmc_data.txt", phaseSpace);
   hmc.WriteLattice("hmc_mag.txt");
-  
+
   /*
   std::ofstream out("magnetization_vs_T.txt");
   out << "#T\t<|m|>\n";
 
   for (double T = 0.1; T <= 3.0; T += 0.1) {
-    double lambda = (T - 2.2) / T;  
+    double lambda = (T - 2.2) / T;
 
     hmc.InitializeLattice();
     hmc.RunSimulation(simSteps, LeapSteps, T, lambda, H);
 
-    
+
     double avg_m = 0;
     int measurement_window = 1000;
     for (int i = simSteps - measurement_window; i < simSteps; ++i) {
@@ -261,5 +274,3 @@ int main(int argc, char* argv[]) {
   */
   return 0;
 }
-
-
