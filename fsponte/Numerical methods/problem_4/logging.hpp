@@ -8,11 +8,11 @@
  * @brief Print vector to the terminal
  * @param vec Vector
 */
-void print(vector_t) noexcept(true);
+void print(const vector_t) noexcept(true);
 
 /**
  * @brief Print field to the terminal
 */
-void print(field_t) noexcept(true);
+void print(const field_t) noexcept(true);
 
 #endif // _LOGGING_HPP_
