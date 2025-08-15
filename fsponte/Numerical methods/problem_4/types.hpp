@@ -13,7 +13,7 @@ using field_t = std::vector<vector_t>; // Matrix
  * @return Vector
  * @throw Invalid dimension
 */
-vector_t init_field(const unsigned long) noexcept(false);
+vector_t init_field(unsigned long) noexcept(false);
 
 /**
  * @brief Initialize the lattice
@@ -22,6 +22,6 @@ vector_t init_field(const unsigned long) noexcept(false);
  * @throw Invalid dimension
  * @note Lattice is a square matrix
 */
-field_t init_lattice(const unsigned long) noexcept(false);
+field_t init_lattice(unsigned long) noexcept(false);
 
 #endif // _TYPES_HPP_
