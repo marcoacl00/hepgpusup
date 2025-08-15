@@ -10,17 +10,18 @@ using field_t = std::vector<vector_t>; // Matrix
 /**
  * @brief Initialize the field
  * @param DIM Number of components
- * @return Vector
+ * @param val Initial value
+ * @return Field
  * @throw Invalid dimension
 */
-vector_t init_field(unsigned long) noexcept(false);
+field_t init_field(unsigned long, double) noexcept(false);
 
 /**
  * @brief Initialize the lattice
  * @param DIM Number of lines and columns
- * @return Field
+ * @return Lattice
  * @throw Invalid dimension
- * @note Lattice is a square matrix
+ * @note Lattice is a square matrix with all elements set to zero
 */
 field_t init_lattice(unsigned long) noexcept(false);
 

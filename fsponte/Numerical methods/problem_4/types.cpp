@@ -4,7 +4,7 @@
 // Dependencies
 #include <cstdlib>
 
-vector_t init_field(const unsigned long DIM) noexcept(false)
+field_t init_field(const unsigned long DIM, const double val) noexcept(false)
 {
 	if (DIM <= 1)
 		throw "Invalid dimenion";
@@ -12,7 +12,7 @@ vector_t init_field(const unsigned long DIM) noexcept(false)
 	auto ret = vector_t(DIM);
 
 	for (auto& component : ret)
-		component = drand48();
+		component = val;
 
 	return ret;
 }
