@@ -5,7 +5,7 @@
 #include <cmath>
 #include "constexpr.hpp"
 
-inline double kinetic_term(const double conj_mom) noexcept(true)
+inline double kinetic_energy(const double conj_mom) noexcept(true)
 {
 	return 0.5 * std::pow(conj_mom, 2);
 }

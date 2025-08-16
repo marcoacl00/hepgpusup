@@ -9,7 +9,7 @@
  * @param conj_mom Conjugate momentum
  * @return Kinetic term value
 */
-inline double kinetic_term(double) noexcept(true);
+inline double kinetic_energy(double) noexcept(true);
 
 /**
  * @brief Immediate neighbor interaction term
