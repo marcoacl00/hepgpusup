@@ -9,10 +9,13 @@ field_t init_field(const unsigned long DIM, const double val) noexcept(false)
 	if (DIM <= 1)
 		throw "Invalid dimenion";
 	
-	auto ret = vector_t(DIM);
+	auto ret = field_t(DIM);
 
-	for (auto& component : ret)
-		component = val;
+	for (auto& line : ret)
+	{
+		for (auto& element : line)
+			element = val;
+	}
 
 	return ret;
 }
