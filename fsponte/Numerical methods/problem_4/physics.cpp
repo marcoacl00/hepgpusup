@@ -5,46 +5,34 @@
 #include <cmath>
 #include "constexpr.hpp"
 
-inline double kinetic_energy(const double conj_mom) noexcept(true)
+double kinetic_energy(const double conj_mom) noexcept(true)
 {
-	return 0.5 * std::pow(conj_mom, 2);
+	return 0.5 * conj_mom * conj_mom;
 }
 
 double neighbor_interaction(const double mag, const vector_t n_mag, const double lat_spa) noexcept(true)
 {
     double sum = 0; // Sum of all the neighbors
 
-	for (const auto& n_mag : n_mags)
-        sum += std::pow(mag - n_mag, 2);
+	for (const auto& neighbor : n_mag)
+        sum += (mag - neighbor) * (mag - neighbor);
 
-	return 0.5 * sum / (a * a);
+	return 0.5 * sum / (lat_spa * lat_spa);
 }
 
-inline double quartic_magnetization(const double temp, const double mag) noexcept(true)
+double quartic_magnetization(const double temp, const double mag) noexcept(true)
 {
-	return temp * std::pow(mag, 2);
+	return temp * mag * mag;
 }
 
-inline double quatic_coupling(const double temp, const double mag) noexcept(true)
+double quartic_coupling(const double temp, const double mag) noexcept(true)
 {
-	return (1 - CRIT_TEMP / temp) * std::pow(mag, 4);
+	return (1 - CRIT_TEMP / temp) * mag * mag * mag * mag;
 }
 
-inline double external_field(const double mag, const double fld_strength) noexcept(true)
+double external_field(const double mag, const double fld_strength) noexcept(true)
 {
 	return fld_strength * mag;
-}
-
-inline double site_energy
-(
-	const double kinetic_term,
-    const double n_mag_term,
-    const double quartic_mag_term,
-	const double quartic_coup_term,
-	const double ext_fld_term
-) noexcept(true)
-{
-    return kinetic_term + n_mag_term + quartic_mag_term + quartic_coup_term + ext_fld_term;
 }
 
 double hamiltonian(const double lat_spa, const unsigned long num_dims, const vector_t energy) noexcept(true)

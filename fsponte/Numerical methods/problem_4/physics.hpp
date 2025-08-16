@@ -9,7 +9,7 @@
  * @param conj_mom Conjugate momentum
  * @return Kinetic term value
 */
-inline double kinetic_energy(double) noexcept(true);
+double kinetic_energy(double) noexcept(true);
 
 /**
  * @brief Immediate neighbor interaction term
@@ -26,14 +26,15 @@ double neighbor_interaction(double, vector_t, double) noexcept(true);
  * @param mag Magnetization
  * @return Quatic magnetization value
 */
-inline double quartic_magnetization(double, double) noexcept(true);
+double quartic_magnetization(double, double) noexcept(true);
 
 /**
  * @brief Quartic coupling term
  * @param temp Temperature
+ * @param mag Magnetization
  * @return Quatic coupling value
 */
-inline double quatic_coupling(double) noexcept(true);
+double quartic_coupling(double, double) noexcept(true);
 
 /**
  * @brief External field term
@@ -41,18 +42,7 @@ inline double quatic_coupling(double) noexcept(true);
  * @param h Field strength
  * @return External field value
 */
-inline double external_field(double, double) noexcept(true);
-
-/**
- * @brief Site energy term
- * @param k Kinetic term
- * @param n_mag Neighbor magnetization term
- * @param q_mag Quartic_mag_term
- * @param q_coup Quartic coupling term
- * @param ext External field term
- * @return Site energy value
-*/
-inline double site_energy(double, double, double, double, double) noexcept(true);
+double external_field(double, double) noexcept(true);
 
 /**
  * @brief Pseudo-Hamiltonian of the system in a discretized lattice
