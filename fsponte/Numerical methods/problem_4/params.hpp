@@ -2,6 +2,7 @@
 #define _PARAMS_HPP_
 
 constexpr unsigned long
+	SIZE = 1E3, // Sample size
 	LAT_SPA = 1, // Lattice spacing
 	NUM_DIMS = 2; // Number of dimensions
 constexpr double
