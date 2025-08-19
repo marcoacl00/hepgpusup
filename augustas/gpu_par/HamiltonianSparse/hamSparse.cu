@@ -7,30 +7,30 @@
 
 using namespace std;
 
-const double sigma = 2.099518748076819;
-const double eps = 4.642973059984742;
-const double mu = 1.0;
+const float sigma = 2.099518748076819;
+const float eps = 4.642973059984742;
+const float mu = 1.0;
 const int N = 10000000;
 const int threads = 1024;
-const double rmin = 2.0;
-const double rmax = 2.7;
-const double dr = (rmax - rmin) / (N);
+const float rmin = 2.0;
+const float rmax = 2.7;
+const float dr = (rmax - rmin) / (N);
 
 
-void hamiltonianOMP(double hbar, vector<int>& row_ptr, vector<int>& col_idx, vector<double>& values);
+void hamiltonianOMP(float hbar, vector<int>& row_ptr, vector<int>& col_idx, vector<float>& values);
 
-double V(double r) {
+float V(float r) {
     return 4.0 * eps * (pow(sigma / r, 12) - pow(sigma / r, 6));
 }
 
-void fillCPU(double* r, double dr, double rmin) {
+void fillCPU(float* r, float dr, float rmin) {
     for (int i = 0; i < N; ++i) {
         r[i] = rmin + i * dr;
     }
 }
 
-void buildHamCPU(double dr, double hbar, double* r, vector<int>& row_ptr, vector<int>& col_idx, vector<double>& values) {
-    double T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
+void buildHamCPU(float dr, float hbar, float* r, vector<int>& row_ptr, vector<int>& col_idx, vector<float>& values) {
+    float T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
 
     int nnz = 0;
     row_ptr.resize(N + 1);
@@ -66,8 +66,8 @@ void buildHamCPU(double dr, double hbar, double* r, vector<int>& row_ptr, vector
     }
 }
 
-void hamiltonianCPU(double hbar, vector<int>& row_ptr, vector<int>& col_idx, vector<double>& values) {
-    double* r = (double*)malloc(N * sizeof(double));
+void hamiltonianCPU(float hbar, vector<int>& row_ptr, vector<int>& col_idx, vector<float>& values) {
+    float* r = (float*)malloc(N * sizeof(float));
     fillCPU(r, dr, rmin);
 
     buildHamCPU(dr, hbar, r, row_ptr, col_idx, values);
@@ -75,20 +75,20 @@ void hamiltonianCPU(double hbar, vector<int>& row_ptr, vector<int>& col_idx, vec
     free(r);
 }
 
-__global__ void fill(double* r_host, double dr, double rmin) {
+__global__ void fill(float* r_host, float dr, float rmin) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
         r_host[i] = rmin + i * dr;
     }
 }
 
-__device__ double V_GPU(double r, double eps, double sigma) {
+__device__ float V_GPU(float r, float eps, float sigma) {
     return 4.0 * eps * (pow(sigma / r, 12) - pow(sigma / r, 6));
 }
 
-__global__ void buildHamCSR(double hbar, double dr,
-    double eps, double sigma, double* r,
-    double* H, int* col_idx, int* row_ptr, double T) {
+__global__ void buildHamCSR(float hbar, float dr,
+    float eps, float sigma, float* r,
+    float* H, int* col_idx, int* row_ptr, float T) {
 
     int i = blockIdx.x * blockDim.x + threadIdx.x;
     if (i < N) {
@@ -113,9 +113,9 @@ __global__ void buildHamCSR(double hbar, double dr,
     }
 }
 
-void hamiltonianGPU(double hbar, vector<int>& h_row_ptr, vector<int>& h_col_idx, vector<double>& h_values) {
-    double* d_r;
-    cudaMalloc(&d_r, N * sizeof(double));
+void hamiltonianGPU(float hbar, vector<int>& h_row_ptr, vector<int>& h_col_idx, vector<float>& h_values) {
+    float* d_r;
+    cudaMalloc(&d_r, N * sizeof(float));
 
     int blocks = (N + threads - 1) / threads;
     fill << <blocks, threads >> > (d_r, dr, rmin);
@@ -135,19 +135,19 @@ void hamiltonianGPU(double hbar, vector<int>& h_row_ptr, vector<int>& h_col_idx,
     h_values.resize(nnz);
 
     int* d_row_ptr, * d_col_idx;
-    double* d_values;
+    float* d_values;
     cudaMalloc(&d_row_ptr, (N + 1) * sizeof(int));
     cudaMalloc(&d_col_idx, nnz * sizeof(int));
-    cudaMalloc(&d_values, nnz * sizeof(double));
+    cudaMalloc(&d_values, nnz * sizeof(float));
 
     cudaMemcpy(d_row_ptr, h_row_ptr.data(), (N + 1) * sizeof(int), cudaMemcpyHostToDevice);
 
-    double T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
+    float T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
     buildHamCSR << <blocks, threads >> > (hbar, dr, eps, sigma, d_r, d_values, d_col_idx, d_row_ptr, T);
     cudaDeviceSynchronize();
 
     cudaMemcpy(h_col_idx.data(), d_col_idx, nnz * sizeof(int), cudaMemcpyDeviceToHost);
-    cudaMemcpy(h_values.data(), d_values, nnz * sizeof(double), cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_values.data(), d_values, nnz * sizeof(float), cudaMemcpyDeviceToHost);
 
     cudaFree(d_r);
     cudaFree(d_row_ptr);
@@ -156,36 +156,36 @@ void hamiltonianGPU(double hbar, vector<int>& h_row_ptr, vector<int>& h_col_idx,
 }
 
 int main() {
-    double hbar = 1.0;
+    float hbar = 1.0;
 
     vector<int> row_ptr, col_idx;
-    vector<double> values;
+    vector<float> values;
 
     hamiltonianCPU(hbar, row_ptr, col_idx, values);
     auto start_CPU = chrono::high_resolution_clock::now();
     hamiltonianCPU(hbar, row_ptr, col_idx, values);
     auto end_CPU = chrono::high_resolution_clock::now();
-    double duration_CPU = chrono::duration<double, milli>(end_CPU - start_CPU).count();
+    float duration_CPU = chrono::duration<float, milli>(end_CPU - start_CPU).count();
     cout << "CPU: " << duration_CPU << " ms " << values[0] << endl;
 
     vector<int> row_ptr2, col_idx2;
-    vector<double> values2;
+    vector<float> values2;
 
     hamiltonianOMP(hbar, row_ptr2, col_idx2, values2);
     auto start_OMP = chrono::high_resolution_clock::now();
     hamiltonianOMP(hbar, row_ptr2, col_idx2, values2);
     auto end_OMP = chrono::high_resolution_clock::now();
-    double duration_OMP = chrono::duration<double, milli>(end_OMP - start_OMP).count();
+    float duration_OMP = chrono::duration<float, milli>(end_OMP - start_OMP).count();
     cout << "OMP: " << duration_OMP << " ms " << values2[0] << endl;
 
     vector<int> row_ptr3, col_idx3;
-    vector<double> values3;
+    vector<float> values3;
 
     hamiltonianGPU(hbar, row_ptr3, col_idx3, values3);
     auto start_GPU = chrono::high_resolution_clock::now();
     hamiltonianGPU(hbar, row_ptr3, col_idx3, values3);
     auto end_GPU = chrono::high_resolution_clock::now();
-    double duration_GPU = chrono::duration<double, milli>(end_GPU - start_GPU).count();
+    float duration_GPU = chrono::duration<float, milli>(end_GPU - start_GPU).count();
     cout << "GPU: " << duration_GPU << " ms " << values3[0] << endl;
 
     //for (int i = 0; i < 10; i++) {

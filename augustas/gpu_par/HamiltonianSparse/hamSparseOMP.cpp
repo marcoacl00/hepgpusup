@@ -1,28 +1,28 @@
 #include <vector>
 
-const double sigma = 2.099518748076819;
-const double eps = 4.642973059984742;
-const double mu = 1.0;
+const float sigma = 2.099518748076819;
+const float eps = 4.642973059984742;
+const float mu = 1.0;
 const int N = 15000000;
-const double rmin = 2.0;
-const double rmax = 2.7;
-const double dr = (rmax - rmin) / (N);
+const float rmin = 2.0;
+const float rmax = 2.7;
+const float dr = (rmax - rmin) / (N);
 
-double V(double r);
+float V(float r);
 
-void fillOMP(double* r, double dr, double rmin) {
+void fillOMP(float* r, float dr, float rmin) {
 #pragma omp parallel for
     for (int i = 0; i < N; ++i) {
         r[i] = rmin + i * dr;
     }
 }
 
-void buildHamOMP(double dr, double hbar, double* r,
+void buildHamOMP(float dr, float hbar, float* r,
     std::vector<int>& row_ptr,
     std::vector<int>& col_idx,
-    std::vector<double>& values)
+    std::vector<float>& values)
 {
-    double T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
+    float T = -hbar * hbar / (2.0 * 1.0 * dr * dr);
 
     // Step 1: row_ptr
     int nnz = 0;
@@ -61,12 +61,12 @@ void buildHamOMP(double dr, double hbar, double* r,
     }
 }
 
-void hamiltonianOMP(double hbar,
+void hamiltonianOMP(float hbar,
     std::vector<int>& row_ptr,
     std::vector<int>& col_idx,
-    std::vector<double>& values)
+    std::vector<float>& values)
 {
-    double* r = (double*)malloc(N * sizeof(double));
+    float* r = (float*)malloc(N * sizeof(float));
     fillOMP(r, dr, rmin);
 
     buildHamOMP(dr, hbar, r, row_ptr, col_idx, values);
