@@ -35,6 +35,7 @@ void matrixMulGPU(int* h_A, int* h_B, float* h_C, int M, int N, int K, int threa
 
     auto start = std::chrono::high_resolution_clock::now();
     Multiplication << <blocksPerGrid, threadsPerBlock >> > (d_A, d_B, d_C, M, N, K);
+    cudaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     auto start_transf = std::chrono::high_resolution_clock::now();

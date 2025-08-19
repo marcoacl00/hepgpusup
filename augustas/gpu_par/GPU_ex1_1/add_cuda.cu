@@ -30,6 +30,7 @@ void vectorAddGPU(int* h_a, int* h_b, int* h_c, int n, int threads) {
 
     auto start = std::chrono::high_resolution_clock::now();
     Addition << <blocksPerGrid, threadsPerBlock >> > (d_a, d_b, d_c, n);
+    cudaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     auto start_transf = std::chrono::high_resolution_clock::now();

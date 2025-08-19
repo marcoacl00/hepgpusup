@@ -24,6 +24,7 @@ void funcEvalGPU(float* h_x, float * h_y, int n, int threads) {
 
 	auto start = std::chrono::high_resolution_clock::now();
 	Evaluate << <blocksPerGrid, threadsPerBlock >> > (d_x, d_y, n);
+	cudaDeviceSynchronize();
 	auto end = std::chrono::high_resolution_clock::now();
 
 	auto start_transf = std::chrono::high_resolution_clock::now();

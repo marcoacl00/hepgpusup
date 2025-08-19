@@ -27,6 +27,7 @@ void matTransGPU(float* h_A, float* h_B, int N, int M, int threads) {
 
 	auto start = std::chrono::high_resolution_clock::now();
 	Transpose << <gridDim, blockDim >> > (d_A, d_B, N, M);
+	cudaDeviceSynchronize();
 	auto end = std::chrono::high_resolution_clock::now();
 
 	auto start_transf = std::chrono::high_resolution_clock::now();

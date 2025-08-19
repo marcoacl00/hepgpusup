@@ -29,6 +29,7 @@ void matVecMulGPU(float* h_A, float* h_b, float* h_c, int N, int M, int threads)
     int blocksPerGrid = (N + threadsPerBlock - 1) / threadsPerBlock;
     auto start = std::chrono::high_resolution_clock::now();
     Multiplication << <blocksPerGrid, threadsPerBlock >> > (d_A, d_b, d_c, N, M);
+    cudaDeviceSynchronize();
     auto end = std::chrono::high_resolution_clock::now();
 
     auto start_transf = std::chrono::high_resolution_clock::now();
