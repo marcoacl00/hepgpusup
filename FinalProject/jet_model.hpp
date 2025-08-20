@@ -37,7 +37,7 @@ class jet_t
 {
 private:
 
-	std::vector<field_t<type_t, N_DIM>> _data; // All the time points of the spacial field
+	field_t<type_t, N_DIM> _data; // Energy density field of the jet
 
 public:
 
@@ -48,9 +48,9 @@ public:
 
 	/**
 	 * @brief Get operator
-	 * @param t Time instant
-	 * @return Field at time instant t 
-	 * @throw Time instant is out of bounds
+	 * @param ind Index
+	 * @return Field value at given index
+	 * @throw Index is out of bounds
 	*/
 	field_t<type_t, N_DIM>& operator [] (unsigned long) noexcept(false);
 

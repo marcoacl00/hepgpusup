@@ -4,17 +4,16 @@
 template <typename type_t, unsigned long N_DIM>
 jet_t<type_t, N_DIM>::jet_t(void)
 {
-	this->_data.push_back(field_t<type_t, N_DIM>()); // First instant
-	this->_data[0].push_back(point_t<type_t, N_DIM>()); // Field in the first instant
+	this->_data.push_back(point_t<type_t, N_DIM>()); // Field in the first instant
 }
 
 template <typename type_t, unsigned long N_DIM>
-field_t<type_t, N_DIM>& jet_t<type_t, N_DIM>::operator [] (const unsigned long t) noexcept(false)
+field_t<type_t, N_DIM>& jet_t<type_t, N_DIM>::operator [] (const unsigned long index) noexcept(false)
 {
-	if (t >= this->_data.size())
-		throw "Time instant is out of bounds";
+	if (index >= this->_data.size())
+		throw "Index is out of bounds";
 
-	return this->_data[t];
+	return this->_data[index];
 }
 
 template <typename type_t, unsigned long N_DIM>
