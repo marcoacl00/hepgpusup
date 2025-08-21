@@ -9,6 +9,7 @@ class PlasmaModel {
     int N; // N grid
     float a; // grid spacing
     int D; // dimensions of the grid
+    int vecSize;
 
 
     int timeSteps; // total number of timeSteps of the integrator
@@ -17,20 +18,27 @@ class PlasmaModel {
 
     std::vector<float> q; // sampled variable (in this case, Energy)
     std::vector<float> p; // conjugate momentum
+    std::vector<float> forceField;
     
     float lambda, beta; // simulation parameters
+    float T; // temperature
 
     std::random_device device;
-    std::mt19937 rng;  // random number generator
+    std::mt19937 rng;  // inrandom number generator
     std::normal_distribution<float> gDist;  // gaussian distribution
+    std::uniform_real_distribution<float> uDist; // uniform distribution for the metropolis step 
     
-    void CalculateForceField(std::vector<float>& forceField);
-    void LeapFrogIntegrator(float lambda, float beta);
+    void CalculateForceField();
+    void LeapFrogIntegrator();
+    float CalculateHamiltonian();
+    
 
   public:
-    PlasmaModel(int N_p, float a_p, int D_p, int timeSteps_p, float dt_p, int L_p, float lambda_p, float beta_p);
+    PlasmaModel(int N_p, float a_p, int D_p, int timeSteps_p, float dt_p, int L_p, float mTherm_p, float gConstant_p, float T_p);
+    PlasmaModel(float lambda_p, float beta_p, int N_p, float a_p, int D_p, int timeSteps_p, float dt_p, int L_p, float T_p);
 
     void InitializeGrid();
+    void RunSimulation();
 
 
 };
