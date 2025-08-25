@@ -2,6 +2,7 @@
 #define PLASMA_MODEL_H
 
 #include <random>
+#include <string>
 #include <vector>
 
 class PlasmaModel {
@@ -18,20 +19,20 @@ class PlasmaModel {
 
     std::vector<float> q; // sampled variable (in this case, Energy)
     std::vector<float> p; // conjugate momentum
-    std::vector<float> forceField;
+    std::vector<float> forceField; // force field of the medium
+    std::vector<float> energyField; // energy field from the medium
     
     float lambda, beta; // simulation parameters
     float T; // temperature
 
     std::random_device device;
-    std::mt19937 rng;  // inrandom number generator
+    std::mt19937 rng;  // random number generator
     std::normal_distribution<float> gDist;  // gaussian distribution
     std::uniform_real_distribution<float> uDist; // uniform distribution for the metropolis step 
     
     void CalculateForceField();
     void LeapFrogIntegrator();
     float CalculateHamiltonian();
-    
 
   public:
     PlasmaModel(int N_p, float a_p, int D_p, int timeSteps_p, float dt_p, int L_p, float mTherm_p, float gConstant_p, float T_p);
@@ -39,8 +40,7 @@ class PlasmaModel {
 
     void InitializeGrid();
     void RunSimulation();
-
-
+    void ExportData(const std::string& file);
 };
 
 #endif //PLASMA_MODEL_H
