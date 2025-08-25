@@ -40,5 +40,6 @@ int main(int argc, char *argv[]) {
   PlasmaModel model(lambda, beta, N, a, D, timeSteps, dt, LeapSteps, T);
   model.InitializeGrid();
   model.RunSimulation();
+  model.ExportData("data.txt");
   return 0;
 }
