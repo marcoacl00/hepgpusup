@@ -1,6 +1,6 @@
 // Header file
 #include "numcpp.hpp"
-
+#include <iostream>
 namespace numcpp
 {
 	vector_t linspace(const float start, const float stop, const unsigned long NUM) noexcept(false)
@@ -31,8 +31,8 @@ namespace numcpp
 		{
 			for (unsigned long j = 0; j < Y_DIM; ++j)
 			{
-				X[i][j] = x[j];
-				Y[i][j] = y[i];
+				X[i][j] = x[i];
+				Y[i][j] = y[j];
 			}
 		}
 	}
@@ -43,6 +43,7 @@ namespace numcpp
 			X_DIM = mtx.size(),
 			Y_DIM = mtx[0].size();
 
+		int index;
 		matrix_t ret(X_DIM, vector_t(Y_DIM, 0));
 
 		if (axis == axis_t::X)
@@ -50,7 +51,12 @@ namespace numcpp
 			for (int i = 0; i < X_DIM; ++i)
 			{
 				for (int j = 0; j < Y_DIM; ++j)
-					ret[i][j] = mtx[(i - offset) % X_DIM][j];
+				{
+					index = i - offset;
+
+					if (index < 0) index = X_DIM - 1;
+					ret[i][j] = mtx[index][j];
+				}
 			}
 		}
 		else
@@ -58,7 +64,12 @@ namespace numcpp
 			for (int i = 0; i < X_DIM; ++i)
 			{
 				for (int j = 0; j < Y_DIM; ++j)
-					ret[i][j] = mtx[i][(j - offset) % Y_DIM];
+				{
+					index = j - offset;
+
+					if (index < 0) index = Y_DIM - 1;
+					ret[i][j] = mtx[i][index];
+				}
 			}
 		}
 
