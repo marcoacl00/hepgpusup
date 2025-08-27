@@ -2,11 +2,10 @@
 #define _NUMCPP_HPP_
 
 // Dependencies
-#include <cmath>
 #include <limits>
 #include <vector>
 
-constexpr float inf = std::numeric_limits<float>::infinity(); // Infinity value
+constexpr float INF = std::numeric_limits<float>::infinity(); // Infinity value
 
 using vector_t = std::vector<float>;
 using matrix_t = std::vector<vector_t>;
@@ -15,8 +14,8 @@ using snapshots_t = std::vector<matrix_t>;
 // Axis in geometric space
 enum axis_t
 {
-	X,
-	Y
+	X, // X dimension
+	Y // Y dimension
 };
 
 namespace numcpp
