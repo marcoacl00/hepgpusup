@@ -1,6 +1,6 @@
 // Header file
 #include "numcpp.hpp"
-#include <iostream>
+
 namespace numcpp
 {
 	vector_t linspace(const float start, const float stop, const unsigned long NUM) noexcept(false)
@@ -37,7 +37,7 @@ namespace numcpp
 		}
 	}
 
-	matrix_t roll(const matrix_t& mtx, const unsigned long offset, const axis_t axis) noexcept(true)
+	matrix_t roll(const matrix_t& mtx, unsigned long offset, const axis_t axis) noexcept(true)
 	{
 		const int
 			X_DIM = mtx.size(),
@@ -48,26 +48,38 @@ namespace numcpp
 
 		if (axis == axis_t::X)
 		{
+			offset %= X_DIM;
+
 			for (int i = 0; i < X_DIM; ++i)
 			{
 				for (int j = 0; j < Y_DIM; ++j)
 				{
 					index = i - offset;
 
-					if (index < 0) index = X_DIM - 1;
+					if (index < 0)
+						index += X_DIM;
+					else if (index >= X_DIM)
+						index -= X_DIM;
+					
 					ret[i][j] = mtx[index][j];
 				}
 			}
 		}
 		else
 		{
+			offset %= Y_DIM;
+
 			for (int i = 0; i < X_DIM; ++i)
 			{
 				for (int j = 0; j < Y_DIM; ++j)
 				{
 					index = j - offset;
 
-					if (index < 0) index = Y_DIM - 1;
+					if (index < 0)
+						index += Y_DIM;
+					else if (index >= Y_DIM)
+						index -= Y_DIM;
+					
 					ret[i][j] = mtx[i][index];
 				}
 			}
