@@ -1,37 +1,31 @@
 // Header file
 #include "jet_model.hpp"
 
-matrix_t upwind_deriv(const matrix_t& E, const float v, const float d, const axis_t axis)
+matrix_t upwind_deriv(const matrix_t& field, const float diferencial, const float velocity, const axis_t axis)
 {
-	if (v >= 0)
-		return (E - numcpp::roll(E, 1, axis)) / d;
+	if (velocity >= 0)
+		return (field - numcpp::roll(field, 1, axis)) / diferencial;
 
-	return (numcpp::roll(E, -1, axis) - E) / d;
+	return (numcpp::roll(field, -1, axis) - field) / diferencial;
 }
 
 snapshots_t evolve_jet
 (
-	const matrix_t& E0, const matrix_t& medium,
+	const matrix_t& jet_0, const matrix_t& medium,
 	const float dt, const float dx, const float dy,
 	const float vx, const float vy,
 	const float g,
 	const unsigned long N_STEPS
 )
 {
-	matrix_t
-		E = E0,
-		dE_dx, dE_dy, loss;
+	matrix_t jet = jet_0;
 
-	snapshots_t snapshots(N_STEPS, matrix_t(E0.size(), vector_t(E0[0].size(), 0)));
+	snapshots_t snapshots(N_STEPS, matrix_t(jet_0.size(), vector_t(jet_0[0].size(), 0)));
 
 	for (unsigned long i = 0; i < N_STEPS; ++i)
 	{
-		dE_dx = upwind_deriv(E, vx, dx, axis_t::X);
-		dE_dy = upwind_deriv(E, vy, dy, axis_t::Y);
-		loss = - g * medium * E;
-
-		E = E + dt * (loss - (vx * dE_dx + vy * dE_dy));
-		snapshots[i] = E;
+		jet = jet - dt * (g * medium * jet + vx * upwind_deriv(jet, dx, vx, axis_t::X) + vy * upwind_deriv(jet, dy, vy, axis_t::Y));
+		snapshots[i] = jet;
 	}
 
 	return snapshots;
