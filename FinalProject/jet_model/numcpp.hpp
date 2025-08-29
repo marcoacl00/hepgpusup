@@ -4,12 +4,10 @@
 // Dependencies
 #include <limits>
 #include <vector>
+#include "vector.hpp"
+#include "matrix.hpp"
 
 constexpr float INF = std::numeric_limits<float>::infinity(); // Infinity value
-
-using vector_t = std::vector<float>;
-using matrix_t = std::vector<vector_t>;
-using snapshots_t = std::vector<matrix_t>;
 
 // Axis in geometric space
 enum axis_t
@@ -24,12 +22,11 @@ namespace numcpp
 	 * @brief Create a evenly spaced array
 	 * @param start Starting point
 	 * @param stop Stoping point
-	 * @param num Number of points
 	 * @return Array
 	 * @throw Invalid range
-	 * @throw Invalid number of points
 	*/
-	vector_t linspace(float, float, unsigned long) noexcept(false);
+	template <typename type_t, unsigned long DIM>
+	vector_t<type_t, DIM> linspace(type_t, type_t) noexcept(false);
 
 	/**
 	 * @brief Create a meshgrid
@@ -38,7 +35,8 @@ namespace numcpp
 	 * @param X X matrix
 	 * @param Y Y matrix
 	*/
-	void meshgrid(const vector_t&, const vector_t&, matrix_t&, matrix_t&) noexcept(true);
+	template <typename type_t, unsigned long DIM>
+	void meshgrid(const vector_t<type_t, DIM>&, const vector_t<type_t, DIM>&, matrix_t<type_t, DIM, DIM>&, matrix_t<type_t, DIM, DIM>&) noexcept(true);
 
 	/**
 	 * @brief Roll elements in matrix
@@ -47,15 +45,11 @@ namespace numcpp
 	 * @param ax Axis to operate
 	 * @return Shifted matrix
 	*/
-	matrix_t roll(const matrix_t&, unsigned long, axis_t) noexcept(true);
+	template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+	matrix_t<type_t, N_LIN, N_COL> roll(const matrix_t<type_t, N_LIN, N_COL>&, unsigned long, axis_t) noexcept(true);
 }
 
-vector_t operator - (const vector_t&, const vector_t&) noexcept(true);
-
-matrix_t operator - (const matrix_t&, const matrix_t&) noexcept(true);
-matrix_t operator * (float, const matrix_t&) noexcept(true);
-matrix_t operator / (const matrix_t&, float) noexcept(true);
-matrix_t operator + (const matrix_t&, const matrix_t&) noexcept(true);
-matrix_t operator * (const matrix_t&, const matrix_t&) noexcept(true);
+// Template file
+#include "numcpp.tpp"
 
 #endif // _NUMCPP_HPP_
