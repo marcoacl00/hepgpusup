@@ -32,6 +32,15 @@ void matrix_t<type_t, N_LIN, N_COL>::operator = (const matrix_t<type_t, N_LIN, N
 		this->_data[i] = mtx[i];
 }
 
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+void matrix_t<type_t, N_LIN, N_COL>::operator = (const std::vector<type_t>& mtx) noexcept(false)
+{
+	if (this->size() != mtx.size())
+		throw "Dimensions are different";
+
+	for (unsigned long i = 0; i < this->size(); ++i)
+		this->_data[i] = mtx[i];
+}
 
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 inline type_t& matrix_t<type_t, N_LIN, N_COL>::operator [] (const unsigned long index) noexcept(false)

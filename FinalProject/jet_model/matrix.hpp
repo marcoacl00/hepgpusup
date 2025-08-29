@@ -1,6 +1,9 @@
 #ifndef _MATRIX_HPP_
 #define _MATRIX_HPP_
 
+// Dependencies
+#include <vector>
+
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 class matrix_t
 {
@@ -26,6 +29,7 @@ public:
 	constexpr unsigned long size(void) const noexcept(true);
 
 	void operator = (const matrix_t<type_t, N_LIN, N_COL>&) noexcept(true);
+	void operator = (const std::vector<type_t>&) noexcept(false);
 	inline type_t& operator [] (unsigned long) noexcept(false);
 	inline const type_t& operator [] (unsigned long) const noexcept(false);
 	inline type_t& get(unsigned long, unsigned long) noexcept(false);
