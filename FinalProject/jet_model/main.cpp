@@ -2,11 +2,18 @@
 #include <fstream>
 #include <cmath>
 
+#include "vector.hpp"
+#include "matrix.hpp"
 #include "numcpp.hpp"
 #include "jet_model.hpp"
 
-void print(const vector_t&);
-void print(const matrix_t&);
+using type_t = float;
+
+template <typename type_t, unsigned long DIM>
+void print(const vector_t<type_t, DIM>&);
+
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+void print(const matrix_t<type_t, N_LIN, N_COL>&);
 
 int main(void)
 {
@@ -15,39 +22,37 @@ int main(void)
 		Ny = 200, // Y dimension
 		Lx = 10, // Lattice X dimension
 		Ly = 10; // Lattice Y dimension
-	constexpr float
+	constexpr type_t
 		x0 = 20, // Initial X coordinate
 		y0 = 80, // Initial Y coordinate
-		dx = static_cast<float>(Lx) / Nx, // X diferencial
-		dy = static_cast<float>(Ly) / Ny; // Y diferencial
-	vector_t
-		x = numcpp::linspace(0, Lx, Nx), // Values for X dimension
-		y = numcpp::linspace(0, Ly, Ny); // Values for Y dimension
-	matrix_t
-		X(Nx, vector_t(Ny)), // Mesh for X
-		Y(Nx, vector_t(Ny)), // Mesh for Y
-		medium(Nx, vector_t(Ny)), // Mesh for the medium 
-		jet(Nx, vector_t(Ny)); // Mesh for the jet
-	snapshots_t snapshots; // Snapshots of the jet over time
+		dx = static_cast<type_t>(Lx) / Nx, // X diferencial
+		dy = static_cast<type_t>(Ly) / Ny; // Y diferencial
+	vector_t<type_t, Nx> x = numcpp::linspace<type_t, Nx>(0, Lx); // Values for X dimension
+	vector_t<type_t, Ny> y = numcpp::linspace<type_t, Ny>(0, Ly); // Values for Y dimension
+	matrix_t<type_t, Nx, Ny>
+		X, // Mesh for X
+		Y, // Mesh for Y
+		medium, // Mesh for the medium 
+		jet; // Mesh for the jet
 	std::ofstream file; // Output file
 
 	numcpp::meshgrid(x, y, X, Y);
 
 	// Set initial medium
-    for (unsigned long i = 0; i < Nx; ++i)
+    for (unsigned long i = 0; i < medium.n_lin(); ++i)
 	{
-        for (unsigned long j = 0; j < Ny; ++j)
-            medium[i][j] = std::sin(M_PI * X[i][j]) * std::cos(M_PI * Y[i][j]);
-    }
+		for (unsigned long j = 0; j < medium.n_col(); ++j)
+			medium.get(i, j) = std::sin(M_PI * X.get(i, j)) * std::cos(M_PI * Y.get(i, j));
+	}
 
 	// Write medium to a file
 	{
 		file.open("output/medium.dat");
 
-		for (unsigned long j = 0; j < Ny; ++j)
+		for (unsigned long j = 0; j < medium.n_lin(); ++j)
 		{
-			for (unsigned long i = 0; i < Nx; ++i)
-				file << medium[i][j] << ' ';
+			for (unsigned long i = 0; i < medium.n_col(); ++i)
+				file << medium.get(i, j) << ' ';
 
 			file << '\n';
 		}
@@ -57,22 +62,22 @@ int main(void)
 
 	// Create the medium
 	{
-		constexpr float
+		constexpr type_t
 			sigma_x = 0.5, // Standard deviation in X
 			sigma_y = 0.5, // Standard deviation in Y
 			sigma_x_sq = 2 * sigma_x * sigma_x,
 			sigma_y_sq = 2 * sigma_y * sigma_y;
 
-		float x_pos, y_pos;
+		type_t x_pos, y_pos;
 
 		// Set the medium as a 2D Guassian distribution
 		for (unsigned long i = 0; i < Nx; ++i)
 		{
 			for (unsigned long j = 0; j < Ny; ++j)
 			{
-				x_pos = (X[i][j] - x0 * dx) * (X[i][j] - x0 * dx);
-				y_pos = (Y[i][j] - y0 * dy) * (Y[i][j] - y0 * dy);
-				jet[i][j] = std::exp(-(x_pos / sigma_x_sq + y_pos / sigma_y_sq));
+				x_pos = (X.get(i, j) - x0 * dx) * (X.get(i, j) - x0 * dx);
+				y_pos = (Y.get(i, j) - y0 * dy) * (Y.get(i, j) - y0 * dy);
+				jet.get(i, j) = std::exp(-(x_pos / sigma_x_sq + y_pos / sigma_y_sq));
 			}
 		}
 	}
@@ -80,7 +85,7 @@ int main(void)
 	// Snapshots
 	{
 		const unsigned long N_STEPS = 5E2; // Number of steps
-		float
+		type_t
 			vx = 1, // Velocity in X
 			vy = 0, // Velocity in Y
 			g = 0.5, // Coupling constant
@@ -89,8 +94,7 @@ int main(void)
 				(vx != 0.0) ? dx / std::abs(vx) : INF,
 				(vy != 0.0) ? dy / std::abs(vy) : INF
 			); // Time diferencial
-
-		snapshots = evolve_jet(jet, medium, dt, dx, dy, vx, vy, g, N_STEPS);
+		std::vector<matrix_t<type_t, Nx, Ny>> snapshots = evolve_jet<type_t, Nx, Ny>(jet, medium, dt, dx, dy, vx, vy, g, N_STEPS); // Snapshots of the jet over time
 
 		// Write snapshots to a file
 		{
@@ -101,7 +105,7 @@ int main(void)
 				for (unsigned long j = 0; j < Ny; ++j)
 				{
 					for (unsigned long i = 0; i < Nx; ++i)
-						file << snapshots[snap_index][i][j] << ' ';
+						file << snapshots[snap_index].get(i, j) << ' ';
 
 					file << '\n';
 				}
@@ -116,20 +120,22 @@ int main(void)
 	return 0;
 }
 
-void print(const vector_t& vec)
+template <typename type_t, unsigned long DIM>
+void print(const vector_t<type_t, DIM>& vec)
 {
-	for (const auto& element : vec)
-		std::cout << element << ' ';
+	for (unsigned long i = 0; i < DIM; ++i)
+		std::cout << vec[i] << ' ';
 
 	std::cout << std::endl;
 }
 
-void print(const matrix_t& mtx)
+template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
+void print(const matrix_t<type_t, N_LIN, N_COL>& mtx)
 {
-	for (const auto& line : mtx)
+	for (unsigned long i = 0; i < N_LIN; ++i)
 	{
-		for (const auto& element : line)
-			std::cout << element << ' ';
+		for (unsigned long j = 0; j < N_COL; ++j)
+			std::cout << mtx.get(i, j) << ' ';
 
 		std::cout << '\n';
 	}
