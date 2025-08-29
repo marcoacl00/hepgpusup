@@ -64,9 +64,9 @@ float PlasmaModel::CalculateHamiltonian() {
 PlasmaModel::PlasmaModel(int N_p, float a_p, int D_p, int timeSteps_p,
                          float dt_p, int L_p, float mTherm_p, float gConstant_p,
                          float T_p)
-    : N(N_p), a(a_p), D(D_p), vecSize(pow(N, D)),
-      timeSteps(timeSteps_p), dt(dt_p), L(L_p), T(T_p), rng(device()),
-      gDist(0.0, 1.0), uDist(0.0, 1.0) {
+    : N(N_p), a(a_p), D(D_p), vecSize(pow(N, D)), timeSteps(timeSteps_p),
+      dt(dt_p), L(L_p), T(T_p), rng(device()), gDist(0.0, 1.0),
+      uDist(0.0, 1.0) {
   float c = gConstant_p * pow(a_p, 4 - D_p) / 24.0;
   float k = mTherm_p * mTherm_p * a_p * a_p + 2 * D_p;
   beta = (k - sqrt(k * k + 32 * c)) / (-8 * c);
@@ -79,9 +79,9 @@ PlasmaModel::PlasmaModel(int N_p, float a_p, int D_p, int timeSteps_p,
 PlasmaModel::PlasmaModel(float lambda_p, float beta_p, int N_p, float a_p,
                          int D_p, int timeSteps_p, float dt_p, int L_p,
                          float T_p)
-    : N(N_p), a(a_p), D(D_p), vecSize(pow(N, D)),
-      timeSteps(timeSteps_p), dt(dt_p), L(L_p), T(T_p), rng(device()),
-      gDist(0.0, 1.0), uDist(0.0, 1.0), lambda(lambda_p), beta(beta_p) {
+    : N(N_p), a(a_p), D(D_p), vecSize(pow(N, D)), timeSteps(timeSteps_p),
+      dt(dt_p), L(L_p), T(T_p), rng(device()), gDist(0.0, 1.0), uDist(0.0, 1.0),
+      lambda(lambda_p), beta(beta_p) {
   q = std::vector<float>(vecSize, 0);
   p = std::vector<float>(vecSize, 0);
   forceField = std::vector<float>(vecSize, 0);
@@ -115,7 +115,10 @@ void PlasmaModel::RunSimulation() {
       q = qOld;
     }
 
-    std::cout << "Acc rate: " << acceptanceProb << std::endl;
+    if (t % std::max(1, timeSteps / 100) == 0) {
+      float progress = 100.0f * t / timeSteps;
+      std::cout << "Acc rate: " << acceptanceProb << "; Step: " << t*100/timeSteps << "/100" << std::endl;
+    }
   }
 
   for (int i = 0; i < vecSize; i++) {

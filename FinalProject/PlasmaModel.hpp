@@ -41,6 +41,7 @@ class PlasmaModel {
     void InitializeGrid();
     void RunSimulation();
     void ExportData(const std::string& file);
+    const std::vector<float>& GetEnergyField() {return energyField;}
 };
 
 #endif //PLASMA_MODEL_H
