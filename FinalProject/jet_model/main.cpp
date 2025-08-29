@@ -6,6 +6,7 @@
 #include "matrix.hpp"
 #include "numcpp.hpp"
 #include "jet_model.hpp"
+#include "../PlasmaModel.hpp"
 
 using type_t = float;
 
@@ -38,11 +39,24 @@ int main(void)
 
 	numcpp::meshgrid(x, y, X, Y);
 
-	// Set initial medium
-    for (unsigned long i = 0; i < medium.n_lin(); ++i)
 	{
-		for (unsigned long j = 0; j < medium.n_col(); ++j)
-			medium.get(i, j) = std::sin(M_PI * X.get(i, j)) * std::cos(M_PI * Y.get(i, j));
+		int
+			D = 2,
+			timeSteps = 1000,
+			LeapSteps = 20;
+		float
+			a = 1,
+			dt = 0.01,
+			beta = 0.1,
+			lambda = 0.2689,
+			T = 0.01;
+		PlasmaModel model(lambda, beta, Nx, a, D, timeSteps, dt, LeapSteps, T);
+		model.InitializeGrid();
+		model.RunSimulation();
+		model.ExportData("output/medium.dat");
+
+		// Set initial medium
+		medium = model.GetEnergyField();
 	}
 
 	// Write medium to a file
@@ -84,7 +98,7 @@ int main(void)
 
 	// Snapshots
 	{
-		const unsigned long N_STEPS = 5E2; // Number of steps
+		const unsigned long N_STEPS = 5E3; // Number of steps
 		type_t
 			vx = 1, // Velocity in X
 			vy = 0, // Velocity in Y
@@ -100,7 +114,7 @@ int main(void)
 		{
 			file.open("output/snapshots.dat");
 
-			for (unsigned long snap_index = 0; snap_index < N_STEPS; snap_index += N_STEPS / 10)
+			for (unsigned long snap_index = 0; snap_index < N_STEPS; snap_index += N_STEPS / 100)
 			{
 				for (unsigned long j = 0; j < Ny; ++j)
 				{
@@ -117,6 +131,8 @@ int main(void)
 		}
 	}
 
+	std::cout << std::endl;
+
 	return 0;
 }
 
@@ -126,7 +142,7 @@ void print(const vector_t<type_t, DIM>& vec)
 	for (unsigned long i = 0; i < DIM; ++i)
 		std::cout << vec[i] << ' ';
 
-	std::cout << std::endl;
+	std::cout << '\n';
 }
 
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
@@ -139,6 +155,4 @@ void print(const matrix_t<type_t, N_LIN, N_COL>& mtx)
 
 		std::cout << '\n';
 	}
-
-	std::cout << std::flush;
 }
