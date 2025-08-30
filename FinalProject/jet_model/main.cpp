@@ -101,7 +101,7 @@ int main(void)
 		const unsigned long N_STEPS = 5E3; // Number of steps
 		type_t
 			vx = 1, // Velocity in X
-			vy = 0, // Velocity in Y
+			vy = 2, // Velocity in Y
 			g = 0.5, // Coupling constant
 			CFL = 0.3, // Courant-Friedrichs-Lewy condition
 			dt = CFL * std::min(
