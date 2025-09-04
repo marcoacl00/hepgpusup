@@ -8,8 +8,8 @@ int main(int argc, char *argv[]) {
   float dt = 0.1;
   int timeSteps = 1000;
   int LeapSteps = 20;
-  float lambda = 1;
-  float beta = 1;
+  float mth = 1;
+  float g = 1;
   float T = 1;
 
   for (int i = 1; i < argc; ++i) {
@@ -28,16 +28,16 @@ int main(int argc, char *argv[]) {
       D = std::stoi(argv[++i]);
     else if (arg == "-a" && i + 1 < argc)
       a = std::stod(argv[++i]);
-    else if (arg == "-lambda" && i + 1 < argc)
-      lambda = std::stod(argv[++i]);
-    else if (arg == "-beta" && i + 1 < argc)
-      beta = std::stod(argv[++i]);
+    else if (arg == "-mth" && i + 1 < argc)
+      mth = std::stod(argv[++i]);
+    else if (arg == "-g" && i + 1 < argc)
+      g = std::stod(argv[++i]);
     else {
       std::cerr << "Unknown option or missing argument: " << arg << std::endl;
       return 1;
     }
   }
-  PlasmaModel model(lambda, beta, N, a, D, timeSteps, dt, LeapSteps, T);
+  PlasmaModel model(N, a, D, timeSteps, dt, LeapSteps, mth, g, T);
   model.InitializeGrid();
   model.RunSimulation();
   model.ExportData("data.txt");
