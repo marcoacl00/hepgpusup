@@ -1,4 +1,4 @@
-set terminal gif animate delay 10 loop 0 size 800,600
+set terminal gif animate delay 5 loop 0 size 800,600
 set output "output/snapshots.gif"
 set print
 
