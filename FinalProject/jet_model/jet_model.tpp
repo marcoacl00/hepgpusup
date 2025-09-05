@@ -1,6 +1,9 @@
 #ifndef _JET_MODEL_TPP_
 #define _JET_MODEL_TPP_
 
+// Dependencies
+#include <iostream>
+
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 matrix_t<type_t, N_LIN, N_COL> upwind_deriv(const matrix_t<type_t, N_LIN, N_COL>& field, const type_t diferencial, const type_t velocity, const axis_t axis)
 {
@@ -22,14 +25,13 @@ std::vector<matrix_t<type_t, N_LIN, N_COL>> evolve_jet
 	matrix_t<type_t, N_LIN, N_COL> jet = jet_0;
 	std::vector<matrix_t<type_t, N_LIN, N_COL>> ret(N_STEPS); // Return snapshots
 
-	for (unsigned long i = 0; i < jet.size(); ++i)
-	{
-		if (jet[i] != jet_0[i])
-			std::cout << i << std::endl;
-	}
-
 	for (unsigned long i = 0; i < N_STEPS; ++i)
 	{
+		std::cout
+			<< "Time instant: " << i * dt
+			<< "; Step: " << i << '/' << N_STEPS
+			<< std::endl;
+
 		jet = jet - dt * (g * medium * jet + vx * upwind_deriv(jet, dx, vx, axis_t::X) + vy * upwind_deriv(jet, dy, vy, axis_t::Y));
 		ret[i] = jet;
 	}
