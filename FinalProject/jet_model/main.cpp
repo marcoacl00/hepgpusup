@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <iomanip>
 
 #include "vector.hpp"
 #include "matrix.hpp"
@@ -18,70 +19,41 @@ void print(const matrix_t<type_t, N_LIN, N_COL>&);
 
 int main(int argc, char* argv[])
 {
-	constexpr unsigned long
-		Nx = 200, // X dimension
-		Ny = 200, // Y dimension
-		Lx = 10, // Lattice X dimension
-		Ly = 10; // Lattice Y dimension
+	constexpr unsigned long N = 200; // X and Y dimensions
 	constexpr type_t
 		x0 = 20, // Initial X coordinate
 		y0 = 80, // Initial Y coordinate
-		dx = static_cast<type_t>(Lx) / Nx, // X diferencial
-		dy = static_cast<type_t>(Ly) / Ny; // Y diferencial
-	vector_t<type_t, Nx> x = numcpp::linspace<type_t, Nx>(0, Lx); // Values for X dimension
-	vector_t<type_t, Ny> y = numcpp::linspace<type_t, Ny>(0, Ly); // Values for Y dimension
-	matrix_t<type_t, Nx, Ny>
+		dx = 0.1, // X diferencial
+		dy = 0.1; // Y diferencial
+	type_t
+		g = 1, // Coupling constant
+		dt = 0.005; // Time diferencial
+	vector_t<type_t, N>
+		x = numcpp::linspace<type_t, N>(0, N / 10), // Values for X dimension
+		y = numcpp::linspace<type_t, N>(0, N / 10); // Values for Y dimension
+	matrix_t<type_t, N, N>
 		X, // Mesh for X
 		Y, // Mesh for Y
 		medium, // Mesh for the medium 
 		jet; // Mesh for the jet
 	std::ofstream file; // Output file
 
+	std::cout << std::fixed << std::setprecision(10);
 	numcpp::meshgrid(x, y, X, Y);
 
+	// Create the medium
 	{
-		int N = 16;
 		float a = 1;
 		int D = 2;
-		float dt = 0.1;
-		int timeSteps = 1000;
+		int timeSteps = 5000;
 		int LeapSteps = 20;
 		float mth = 1;
-		float g = 1;
-		float T = 1;
-		
-		for (int i = 1; i < argc; ++i)
-		{
-			std::string arg = argv[i];
-			
-			if (arg == "-N" && i + 1 < argc)
-				N = std::stoi(argv[++i]);
-			else if (arg == "-dt" && i + 1 < argc)
-				dt = std::stod(argv[++i]);
-			else if (arg == "-T" && i + 1 < argc)
-				T = std::stod(argv[++i]);
-			else if (arg == "-s" && i + 1 < argc)
-				timeSteps = std::stoi(argv[++i]);
-			else if (arg == "-L" && i + 1 < argc)
-				LeapSteps = std::stoi(argv[++i]);
-			else if (arg == "-D" && i + 1 < argc)
-				D = std::stoi(argv[++i]);
-			else if (arg == "-a" && i + 1 < argc)
-				a = std::stod(argv[++i]);
-			else if (arg == "-mth" && i + 1 < argc)
-				mth = std::stod(argv[++i]);
-			else if (arg == "-g" && i + 1 < argc)
-				g = std::stod(argv[++i]);
-			else {
-				std::cerr << "Unknown option or missing argument: " << arg << std::endl;
-				return 1;
-			}
-		}
+		float T = 0.8;
 
-		PlasmaModel model(lambda, beta, Nx, a, D, timeSteps, dt, LeapSteps, T);
+		PlasmaModel model(N, a, D, timeSteps, dt, LeapSteps, mth, g, T);
 		model.InitializeGrid();
 		model.RunSimulation();
-		model.ExportData("output/medium.dat");
+		//model.ExportData("output/medium.dat");
 
 		// Set initial medium
 		medium = model.GetEnergyField();
@@ -90,6 +62,7 @@ int main(int argc, char* argv[])
 	// Write medium to a file
 	{
 		file.open("output/medium.dat");
+		file.precision(10);
 
 		for (unsigned long j = 0; j < medium.n_lin(); ++j)
 		{
@@ -112,10 +85,10 @@ int main(int argc, char* argv[])
 
 		type_t x_pos, y_pos;
 
-		// Set the medium as a 2D Guassian distribution
-		for (unsigned long i = 0; i < Nx; ++i)
+		// Set the jet as a 2D Guassian distribution
+		for (unsigned long i = 0; i < N; ++i)
 		{
-			for (unsigned long j = 0; j < Ny; ++j)
+			for (unsigned long j = 0; j < N; ++j)
 			{
 				x_pos = (X.get(i, j) - x0 * dx) * (X.get(i, j) - x0 * dx);
 				y_pos = (Y.get(i, j) - y0 * dy) * (Y.get(i, j) - y0 * dy);
@@ -124,29 +97,25 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	// Snapshots
+	// Compute the snapshots of the jet
 	{
-		const unsigned long N_STEPS = 5E3; // Number of steps
+		constexpr float TIME_RANGE = 10; // Time duration of the jet simulation
+		const auto N_STEPS = static_cast<unsigned long>(TIME_RANGE / dt); // Number of steps
 		type_t
 			vx = 1, // Velocity in X
-			vy = 2, // Velocity in Y
-			g = 0.5, // Coupling constant
-			CFL = 0.3, // Courant-Friedrichs-Lewy condition
-			dt = CFL * std::min(
-				(vx != 0.0) ? dx / std::abs(vx) : INF,
-				(vy != 0.0) ? dy / std::abs(vy) : INF
-			); // Time diferencial
-		std::vector<matrix_t<type_t, Nx, Ny>> snapshots = evolve_jet<type_t, Nx, Ny>(jet, medium, dt, dx, dy, vx, vy, g, N_STEPS); // Snapshots of the jet over time
+			vy = 2; // Velocity in Y
+		std::vector<matrix_t<type_t, N, N>> snapshots = evolve_jet<type_t, N, N>(jet, medium, dt, dx, dy, vx, vy, g, N_STEPS); // Snapshots of the jet over time
 
 		// Write snapshots to a file
 		{
 			file.open("output/snapshots.dat");
+			file.precision(10);
 
 			for (unsigned long snap_index = 0; snap_index < N_STEPS; snap_index += N_STEPS / 100)
 			{
-				for (unsigned long j = 0; j < Ny; ++j)
+				for (unsigned long j = 0; j < N; ++j)
 				{
-					for (unsigned long i = 0; i < Nx; ++i)
+					for (unsigned long i = 0; i < N; ++i)
 						file << snapshots[snap_index].get(i, j) << ' ';
 
 					file << '\n';
