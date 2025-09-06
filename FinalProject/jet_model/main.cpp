@@ -14,7 +14,7 @@ void print(const vector_t<type_t, DIM>&);
 template <typename type_t, unsigned long N_LIN, unsigned long N_COL>
 void print(const matrix_t<type_t, N_LIN, N_COL>&);
 
-int main(int argc, char* argv[])
+int main(void)
 {
 	constexpr unsigned long N = 200; // X and Y dimensions
 	constexpr float
