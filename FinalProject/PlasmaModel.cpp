@@ -80,8 +80,8 @@ PlasmaModel::PlasmaModel(float lambda_p, float beta_p, int N_p, float a_p,
                          int D_p, int timeSteps_p, float dt_p, int L_p,
                          float T_p)
     : N(N_p), a(a_p), D(D_p), vecSize(pow(N, D)), timeSteps(timeSteps_p),
-      dt(dt_p), L(L_p), T(T_p), rng(device()), gDist(0.0, 1.0), uDist(0.0, 1.0),
-      lambda(lambda_p), beta(beta_p) {
+      dt(dt_p), L(L_p), lambda(lambda_p), beta(beta_p), T(T_p),
+	  rng(device()), gDist(0.0, 1.0), uDist(0.0, 1.0) {
   q = std::vector<float>(vecSize, 0);
   p = std::vector<float>(vecSize, 0);
   forceField = std::vector<float>(vecSize, 0);
