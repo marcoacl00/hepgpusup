@@ -8,7 +8,7 @@
 /* PRIVATE METHODS */
 
 void PlasmaModel::CalculateForceField() {
-  for (int i = 0; i < forceField.size(); i++) {
+  for (unsigned long i = 0; i < forceField.size(); i++) {
     float J = 0.0f;
     int stride = 1;
     for (int mu = 0; mu < D; ++mu) {
