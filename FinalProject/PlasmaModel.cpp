@@ -117,7 +117,7 @@ void PlasmaModel::RunSimulation() {
 
     if (t % std::max(1, timeSteps / 100) == 0) {
       float progress = 100.0f * t / timeSteps;
-      std::cout << "Acc rate: " << acceptanceProb << "; Step: " << t*100/timeSteps << "/100" << std::endl;
+      std::cout << "Acc rate: " << acceptanceProb << "; Step: " << progress << "/100" << std::endl;
     }
   }
 
