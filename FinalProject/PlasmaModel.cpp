@@ -141,7 +141,7 @@ void PlasmaModel::ExportData(const std::string &file) {
     for (int i = 0; i < N; i++) {
       out << energyField[i];
       if (i < N - 1)
-        out << ",";
+        out << " ";
     }
     out << "\n";
   } else if (D == 2) {
@@ -150,7 +150,7 @@ void PlasmaModel::ExportData(const std::string &file) {
         int idx = i * N + j;
         out << energyField[idx];
         if (j < N - 1)
-          out << ",";
+          out << " ";
       }
       out << "\n";
     }
@@ -165,9 +165,9 @@ void PlasmaModel::ExportData(const std::string &file) {
       for (int d = 0; d < D; d++) {
         out << coords[d];
         if (d < D - 1)
-          out << ",";
+          out << " ";
       }
-      out << "," << energyField[idx] << "\n";
+      out << " " << energyField[idx] << "\n";
     }
   }
 }
