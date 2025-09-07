@@ -35,7 +35,6 @@ int main(void)
 		jet; // Mesh for the jet
 	std::ofstream file; // Output file
 
-	std::cout << std::fixed << std::setprecision(10);
 	numcpp::meshgrid(x, y, X, Y);
 
 	// Create the medium
@@ -92,7 +91,6 @@ int main(void)
 		// Write snapshots to a file
 		{
 			file.open("output/snapshots.dat");
-			file.precision(10);
 
 			for (unsigned long snap_index = 0; snap_index < N_STEPS; snap_index += N_STEPS / 100)
 			{
